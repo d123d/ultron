@@ -67,3 +67,23 @@ synapses:
   - {from: claude-leader,    to: codex-leader,     weight: -0.4}
   - {from: codex-leader,     to: gemini-argon,     weight: -0.4}
   - {from: gemini-argon,     to: github-leader,    weight: -0.3}
+
+  # pathways added in the Ultron merge (2026-11-14): new registry neurons wired in
+  - {from: claude,    to: github,          weight: 0.6}
+  - {from: codex,     to: github,          weight: 0.7}
+  - {from: github,    to: opencode,        weight: -0.4}
+  - {from: main,      to: gpt,             weight: 0.5}
+  - {from: main,      to: meta,            weight: 0.5}
+  - {from: utility,   to: ollama-cloud,    weight: 0.7}
+  - {from: ollama-cloud, to: utility,      weight: 0.5}
+  - {from: agy,       to: gemini-api,      weight: 0.6}
+  - {from: gemini-api, to: main,           weight: 0.5}
+  - {from: vision,    to: nim-vl,          weight: 0.7}
+  - {from: vision,    to: openrouter-gemma, weight: 0.6}
+  - {from: nim-vl,    to: main,            weight: 0.6}
+  - {from: utility,   to: nim-gemma,       weight: 0.5}
+  - {from: utility,   to: nim-minimax,     weight: 0.5}
+  - {from: main,      to: nim-step,        weight: 0.4}
+  - {from: main,      to: nim-glm,         weight: 0.5}
+  - {from: strata,    to: nim-lightning,   weight: 0.6}
+  - {from: zen,       to: go,              weight: 0.5}
