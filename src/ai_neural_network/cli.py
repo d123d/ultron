@@ -369,13 +369,22 @@ def _dispatch(args) -> int:
 
     if args.cmd == "sleep":
         result = net.sleep(decay=args.decay, prune_below=args.prune_below)
-        _out(result, args.json, f"sleep: decayed all weights by {args.decay}; pruned {len(result['pruned'])} synapses; weights -> {result['weights_saved']}")
+        msg = (
+            f"sleep: decayed all weights by {args.decay}; "
+            f"pruned {len(result['pruned'])} synapses; weights -> {result['weights_saved']}"
+        )
+        _out(result, args.json, msg)
         return 0
 
     if args.cmd == "sync":
         missing = net.sync_missing()
         data = {"missing_neurons": missing}
-        _out(data, args.json, "all registry workers/tiers have neurons" if not missing else "no neuron yet for: " + ", ".join(missing))
+        msg = (
+            "all registry workers/tiers have neurons"
+            if not missing
+            else "no neuron yet for: " + ", ".join(missing)
+        )
+        _out(data, args.json, msg)
         return 0
 
     if args.cmd == "workers":
