@@ -79,6 +79,8 @@ class Network:
         max_ticks: int = 8,
         *,
         respect_cooldowns: bool = False,
+        stakes: str | None = None,
+        carry: bool = False,
     ) -> Trace:
         for n in self.neurons.values():
             n.activation, n.fired_at, n.refractory_left = 0.0, None, 0
@@ -100,13 +102,22 @@ class Network:
             for n in self.neurons.values():
                 if n.receptive_to(capability):
                     n.activation = intensity * entry_boost.get(n.region, 0.6)
+        if carry:
+            # Working memory: last population stays warm, so a follow-up
+            # stimulus starts from the previous train of thought.
+            for name in getattr(self, "_last_fired", []):
+                if name in self.neurons:
+                    self.neurons[name].activation += 0.3
 
         for tick in range(max_ticks):
+            # Thalamic gating: high stakes raises every non-prefrontal
+            # threshold, so only the executive is recruited.
+            gate = 1.4 if stakes == "high" else 1.0
             ready = [
                 n
                 for n in self.neurons.values()
                 if n.can_fire()
-                and n.activation >= n.threshold
+                and n.activation >= n.threshold * (gate if n.region != "prefrontal" else 1.0)
                 and (n.region != "motor" or n.receptive_to(capability))
             ]
             if not ready:
@@ -140,6 +151,7 @@ class Network:
                 n.tick_rest()
                 if n.fired_at is None:
                     n.activation *= 0.85
+        self._last_fired = list(trace.fired)
         return trace
 
     def learn(
@@ -148,14 +160,59 @@ class Network:
         success: bool,
         rate: float = 0.05,
         decay: float = 0.002,
+        modulation: float = 1.0,
     ) -> None:
-        """Fire together, wire together. Inhibitory edges stay structural in v0.1."""
+        """Hebbian + STDP-lite + neuromodulation (Ultron merge, 2026-11-14).
+
+        - Excitatory edges on the firing path move by rate x modulation,
+          full when the source fired no later than the target (causal
+          order), half when the order was reversed.
+        - modulation is the global reward signal: callers scale it with
+          outcome quality (verify margin, cost, quota pain).
+        - Inhibitory edges learn too: a fired inhibitory source relaxes
+          by 0.01 on success, tightens by 0.01 on failure, bounded.
+        - Unused excitatory edges decay.
+        """
+        tick_of: dict[str, int] = {}
+        for tick in trace.ticks:
+            for name in tick.get("fired", []):
+                tick_of.setdefault(name, tick.get("tick", 0))
         used = set(trace.edges_used)
+        for edge, w in list(self.synapses.items()):
+            a, b = edge
+            if w > 0:
+                if edge in used:
+                    causal = 1.0 if tick_of.get(a, 0) <= tick_of.get(b, 0) else 0.5
+                    delta = rate * modulation * causal
+                    w = w + delta if success else w - delta
+                else:
+                    w = w - decay
+                self.synapses[edge] = max(0.0, min(1.0, w))
+            elif a in tick_of:
+                w = w + 0.01 if success else w - 0.01
+                self.synapses[edge] = max(-1.0, min(-0.05, w))
+
+    def sleep(self, decay: float = 0.01, prune_below: float = 0.05) -> dict[str, Any]:
+        """Sleep consolidation: decay every excitatory weight, prune the
+        ones that faded below prune_below to 0, persist weights.json."""
+        pruned: list[str] = []
         for edge, w in list(self.synapses.items()):
             if w <= 0:
                 continue
-            w = w + rate if (edge in used and success) else w - rate if edge in used else w - decay
-            self.synapses[edge] = max(0.0, min(1.0, w))
+            w = max(0.0, w - decay)
+            if 0 < w < prune_below:
+                pruned.append(f"{edge[0]}->{edge[1]}")
+                w = 0.0
+            self.synapses[edge] = w
+        path = self.save_weights()
+        return {"pruned": pruned, "weights_saved": str(path)}
+
+    def sync_missing(self) -> list[str]:
+        """Neurogenesis check: registry workers/tiers with no neuron yet.
+        tiny/local are Strata aliases and count as covered by `strata`."""
+        reg = registry.load()
+        known = set(self.neurons) | {"tiny", "local"}
+        return sorted((set(reg.workers) | set(reg.tiers)) - known)
 
     def _select_target(self, trace: Trace, reg: registry.Registry, *, capability: str | None, allow_claude: bool) -> str | None:
         for name in reversed(trace.fired):
