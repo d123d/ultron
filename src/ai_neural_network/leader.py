@@ -96,7 +96,7 @@ def elect_leader(reg: Registry | None = None) -> dict[str, Any]:
     }
 
 
-def _dispatch_channel(channel: str, message: str, *, repo: str = "d123d/ai-fleet",
+def _dispatch_channel(channel: str, message: str, *, repo: str = "d123d/agent-comms",
                       issue: int | None = None, title: str | None = None) -> list[dict[str, Any]]:
     sent: list[dict[str, Any]] = []
     ch = (channel or "none").lower()
@@ -111,7 +111,7 @@ def _dispatch_channel(channel: str, message: str, *, repo: str = "d123d/ai-fleet
 
 
 def wake_leader(report: str, *, system: str | None = None, channel: str = "none",
-                repo: str = "d123d/ai-fleet", issue: int | None = None,
+                repo: str = "d123d/agent-comms", issue: int | None = None,
                 reg: Registry | None = None) -> dict[str, Any]:
     """Wake the highest-priority available Fleet Leader with a status report."""
     reg = reg or registry.load()
@@ -155,7 +155,7 @@ def _run_cmd(argv: list[str], *, timeout_s: int = 45) -> subprocess.CompletedPro
     return subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout_s)
 
 
-def comm_message(to: str, message: str = "", *, repo: str = "d123d/ai-fleet", issue: int | None = None,
+def comm_message(to: str, message: str = "", *, repo: str = "d123d/agent-comms", issue: int | None = None,
                  title: str | None = None, labels: list[str] | None = None,
                  read: bool = False, channel: str = "none", reg: Registry | None = None) -> dict[str, Any]:
     """Send or read agent/leader messages across Muse, GitHub, Telegram, OpenHuman, or the elected Leader."""
