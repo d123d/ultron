@@ -97,6 +97,8 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--entry")
     s.add_argument("--intensity", type=float, default=1.0)
     s.add_argument("--cooldowns", action="store_true", help="apply brainstem cooldowns before excitation")
+    s.add_argument("--stakes", choices=["high"], help="thalamic gating: high = only prefrontal recruited easily")
+    s.add_argument("--carry", action="store_true", help="working memory: start warm from the previous population")
     s.add_argument("--trace", action="store_true")
     s.add_argument("--json", action="store_true")
 
@@ -124,6 +126,14 @@ def main(argv: list[str] | None = None) -> int:
     grp.add_argument("--success", action="store_true", default=True)
     grp.add_argument("--fail", action="store_true")
     s.add_argument("--rate", type=float, default=0.05)
+    s.add_argument("--json", action="store_true")
+
+    s = sub.add_parser("sleep", help="sleep consolidation: decay weights, prune faded synapses, save weights.json")
+    s.add_argument("--decay", type=float, default=0.01)
+    s.add_argument("--prune-below", type=float, default=0.05)
+    s.add_argument("--json", action="store_true")
+
+    s = sub.add_parser("sync", help="neurogenesis check: registry workers/tiers that have no neuron yet")
     s.add_argument("--json", action="store_true")
 
     s = sub.add_parser("workers", help="list neurons/workers and tiers")
@@ -289,6 +299,8 @@ def _dispatch(args) -> int:
             entry=args.entry,
             intensity=args.intensity,
             respect_cooldowns=args.cooldowns,
+            stakes=args.stakes,
+            carry=args.carry,
         )
         data = {
             "stimulus": args.stimulus,
@@ -353,6 +365,17 @@ def _dispatch(args) -> int:
             f"  {c['edge']}: {c['before']:.2f} -> {c['after']:.2f} (strengthened)" for c in changed
         ]
         _out({"fired": trace.fired, "changed": changed}, args.json, "\n".join(lines))
+        return 0
+
+    if args.cmd == "sleep":
+        result = net.sleep(decay=args.decay, prune_below=args.prune_below)
+        _out(result, args.json, f"sleep: decayed all weights by {args.decay}; pruned {len(result['pruned'])} synapses; weights -> {result['weights_saved']}")
+        return 0
+
+    if args.cmd == "sync":
+        missing = net.sync_missing()
+        data = {"missing_neurons": missing}
+        _out(data, args.json, "all registry workers/tiers have neurons" if not missing else "no neuron yet for: " + ", ".join(missing))
         return 0
 
     if args.cmd == "workers":
