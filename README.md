@@ -1,25 +1,72 @@
-# ai-neural-network
+# Ultron
 
-Brain-structured AI orchestration replacing retired AI Fleet dispatch with cortical regions, weighted synapses, lateral inhibition, refractory cooldowns, and outcome-driven Hebbian plasticity.
+**The AI neural network. One brain, every agent and model Dustin has.**
 
-## Regions & Pathways
+Ultron is what AI Fleet became when the dispatcher was deleted. It is the
+merge (2026-11-14) of Gemini's `ai-neural-network` (live firing, fleet
+registry, leader election) and Muse's `neural-fleet` (propagation core,
+docs, skill layer), plus the 20 improvements held for this merge.
+`ai-neural-network` is the surviving repo; `neural-fleet` is archived
+and points here.
 
-- **sensory**: `strata`, `vision` — local/private inference and visual perception
-- **memory**: `utility`, `openhuman` — fast recall and unattended Second-in-Command rhythm
-- **association**: `agy`, `main`, `gemini`, `go-pro`, `nim-ultra`, `openrouter-ultra`, `nim-mistral`, `muse`, `zen`, `zen-deepseek`, `zen-glm` — research, synthesis, and cloud inference tiers
-- **prefrontal**: `claude`, `claude-leader`, `codex`, `codex-leader`, `gemini-argon`, `github-leader`, `agy-opus`, `muse-code`, `best` — planning, review, and leader election
-- **motor**: `opencode`, `pi` — code, edit, and shell execution
+There is no router. A task is a **stimulus**: it enters at sensory neurons,
+spreads through weighted excitatory and inhibitory synapses, recruits a
+**firing population** across cortical regions, the population does the
+work, cerebellum checks verify it, and the outcome rewires the synapses.
 
-Signals enter at receptive neurons (`excite`), spread through weighted excitatory/inhibitory synapses (`config/neurons.yaml`, `config/synapses.yaml`), recruit a firing population (`fire` / `pulse`), verify via cerebellum checks (`done_when`), and update weights via Hebbian learning (`config/weights.json`).
+| AI Fleet | Ultron | Brain |
+|---|---|---|
+| worker / model tier | neuron (`config/neurons.yaml`, 39) | neuron |
+| router picks one worker | propagation; population decides | no central controller |
+| task card | stimulus / signal | sensory input |
+| capability list | receptive field | receptive field |
+| rank | synaptic weights (learned) | synapse strength |
+| cooldown / quota | refractory period + brainstem | refractory period |
+| done-when checks | cerebellum -> learning signal | cerebellum |
+| ledger | hippocampus: episodes | memory |
+| doctor / health | brainstem homeostasis | brainstem |
+| leader election | prefrontal leader neurons | executive control |
 
-## Quick Start
+## Regions
 
-```powershell
-C:\AI\bin\brain.cmd status
-C:\AI\bin\brain.cmd excite "fix the parser" --capability code --trace
-C:\AI\bin\brain.cmd fire "summarise notes" --capability text
-C:\AI\bin\brain.cmd learn --demo
-C:\AI\bin\brain.cmd leader elect --json
+- **sensory**: strata, vision, nim-vl, openrouter-gemma — local/private and visual input
+- **memory**: utility, ollama-cloud, nim-lightning, openhuman — recall, fast tiers, unattended rhythm
+- **association**: agy, main, gemini, gemini-api, gpt, meta, the NIM and Zen families, go/go-pro, muse — research and synthesis
+- **prefrontal**: claude, codex, leaders (claude/codex/github), gemini-argon, agy-opus, muse-code, best — planning, review, executive
+- **motor**: opencode, pi, github — code, edit, shell
+
+Every worker and tier in the fleet registry has a neuron. `brain sync`
+reports any registry entry that lacks one (neurogenesis check).
+
+## Use
+
+```bash
+brain status
+brain excite "fix the parser" --capability code --trace
+brain excite "review the plan" --capability review --stakes high   # thalamic gating: prefrontal only
+brain fire "summarise notes" --capability text                     # propagate + invoke + verify + learn
+brain sleep                                                        # consolidation: decay + prune + save weights
+brain sync                                                         # registry entries with no neuron
+brain leader elect
 ```
 
-CLI: `C:\AI\bin\brain.cmd` (`brain`). MCP server: `brain-mcp`.
+MCP server: `brain-mcp` (also `ultron-mcp`). CLI also installs as `ultron`.
+
+## Learning
+
+Hebbian, with the merge's upgrades: **STDP-lite** (causal firing order
+earns full update, reversed earns half), **neuromodulation** (a global
+reward scalar scales the update), **learned inhibition** (inhibitory
+edges relax on success, tighten on failure), and **sleep consolidation**
+(unused weights decay; faded synapses prune to zero). Working memory:
+`excite --carry` starts warm from the previous population.
+
+## Skill layer
+
+ponytail (minimum code), caveman (minimum tokens), find-skills
+(skills.sh acquisition) — see `docs/SKILLS.md` and `config/skills.yaml`.
+
+## Access for other agents
+
+See [ACCESS.md](ACCESS.md): repo link, clone, MCP config, and the
+stimulus contract. One link is all an agent needs.
