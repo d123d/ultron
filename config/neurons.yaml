@@ -189,3 +189,95 @@ neurons:
     refractory_ticks: 1
     receptive_field: [vision, image, text]
     notes: "Visual cortex (NVIDIA Nemotron 3.5 Super VL)."
+
+  github:
+    region: motor
+    kind: agent
+    threshold: 0.50
+    refractory_ticks: 2
+    receptive_field: [code, edit, shell, text, review]
+    notes: "GitHub Copilot worker (added in fleet, Nov 14). Motor output via Copilot."
+  gpt:
+    region: association
+    kind: tier
+    threshold: 0.55
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, code]
+    notes: "GPT tier via Codex/OpenAI route in the fleet registry."
+  meta:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning]
+    notes: "Meta models tier in the fleet registry."
+  ollama-cloud:
+    region: memory
+    kind: tier
+    threshold: 0.40
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, recall]
+    notes: "Ollama Cloud direct tier (utility runs on it). Fast recall."
+  gemini-api:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, research, reasoning, vision]
+    notes: "Gemini API direct tier, separate from the agy CLI route."
+  nim-gemma:
+    region: association
+    kind: tier
+    threshold: 0.45
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, vision]
+    notes: "Gemma 4 31B on NVIDIA NIM."
+  nim-vl:
+    region: sensory
+    kind: tier
+    threshold: 0.45
+    refractory_ticks: 1
+    receptive_field: [vision, image, text]
+    notes: "Nemotron vision-language on NIM. Second visual pathway beside vision."
+  nim-minimax:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning]
+    notes: "MiniMax on NIM. Utility fallback in the fleet registry."
+  nim-step:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning]
+    notes: "StepFun on NIM."
+  nim-glm:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, code]
+    notes: "GLM on NIM."
+  nim-lightning:
+    region: memory
+    kind: tier
+    threshold: 0.35
+    refractory_ticks: 1
+    receptive_field: [text, recall]
+    notes: "Nemotron 3.5 Lightning on NIM. Fast, shallow recall; fails long reasoning."
+  openrouter-gemma:
+    region: sensory
+    kind: tier
+    threshold: 0.45
+    refractory_ticks: 1
+    receptive_field: [text, vision, image]
+    notes: "Gemma 4 31B free via OpenRouter (1M context)."
+  go:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, code, reasoning]
+    notes: "OpenCode Go tier (go-pro is its stronger sibling neuron)."
