@@ -22,7 +22,7 @@ INSTRUCTIONS = (
     "cards (Claude remains operator-only over MCP), and `brain_leader` for leader election and GitHub/Telegram/Muse comms."
 )
 
-mcp = FastMCP("brain", instructions=INSTRUCTIONS)
+mcp = FastMCP("ultron", instructions=INSTRUCTIONS)
 
 
 def _j(data: Any) -> str:
