@@ -1,0 +1,424 @@
+defaults:
+  timeout_s: 1800
+  quota_patterns:
+  - rate limit
+  - rate_limit
+  - quota
+  - usage limit
+  - '429'
+  - insufficient_quota
+  - exceeded your
+  - IneligibleTier
+  - no_access
+  - credit balance
+  cooldown_s: 3600
+workers:
+  opencode:
+    kind: agent
+    control: acpx
+    acpx_agent: opencode
+    cost: free
+    rank: 10
+    capabilities:
+    - code
+    - edit
+    - shell
+    - text
+    - local
+    notes: OpenCode, free Zen model (mimo-v2.6-flash-free). Default for bulk coding/editing.
+      Smoke 9-28 s. On local Flash-Next (Strata gateway) 2/2 coding tasks in 185 s and 154 s (2026-11-06).
+    probe:
+    - opencode
+    - --version
+  codex:
+    kind: agent
+    control: acpx
+    acpx_agent: codex
+    cost: flat
+    rank: 20
+    enabled: true
+    capabilities:
+    - code
+    - edit
+    - shell
+    - text
+    - review
+    notes: Codex CLI via codex-acp, ChatGPT subscription. Default model gpt-5.6-sol
+      (AA 47; effort xhigh since 2026-10-12). Strong but slow on big tasks; subscription
+      cooldowns.
+    probe:
+    - codex
+    - --version
+  agy:
+    kind: agent
+    control: agy
+    cost: flat
+    rank: 30
+    capabilities:
+    - code
+    - edit
+    - shell
+    - text
+    - research
+    notes: Antigravity CLI (agy -p --output-format json). Google account. Replaces
+      Gemini CLI (cut off 2026-06-18). Smoke ~40 s.
+    probe:
+    - agy
+    - --version
+  pi:
+    kind: agent
+    control: acpx
+    acpx_agent: pi
+    cost: free
+    rank: 50
+    resources: []  # cloud default (OpenRouter Nemotron); local Strata only when asked
+    max_parallel: 1
+    capabilities:
+    - code
+    - edit
+    - shell
+    - text
+    - local
+    notes: pi coding agent; default openrouter nemotron free. Preferred for local Flash-Next work (capability local)
+      - on the Strata gateway it solved 2/2 coding tasks in 14 s and 11 s vs OpenCode 185 s and 154 s (2026-11-06).
+    probe:
+    - pi
+    - --version
+  claude:
+    kind: agent
+    control: claude
+    cost: claude
+    rank: 90
+    opt_in: true
+    enabled: false
+    capabilities:
+    - code
+    - edit
+    - shell
+    - text
+    - review
+    - research
+    notes: Claude Code headless. Operator by default; worker only with --allow-claude
+      and a budget cap.
+    probe:
+    - claude
+    - --version
+  github:
+    kind: agent
+    control: command
+    cost: flat
+    rank: 35
+    capabilities:
+    - code
+    - edit
+    - shell
+    - text
+    - review
+    - research
+    timeout_s: 900
+    notes: GitHub Copilot CLI headless worker (copilot -p).
+    probe:
+    - copilot
+    - --version
+    argv:
+    - copilot
+    - -p
+    - "Read the task instructions in {prompt_file} and complete them in {cwd}. End with FLEET_RESULT JSON."
+    - --add-dir
+    - "{cwd}"
+tiers:
+  tiny:
+    base_url: http://127.0.0.1:47831/v1
+    model: qwen3.8-abliterated
+    cost: free
+    notes: Strata desktop app reached through its app gateway :47831 (route A/B 2026-11-05), alias qwen3.8-abliterated, keyless on 127.0.0.1; parallel 1, stopped during ComfyUI renders via strata-gen
+  local:
+    base_url: http://127.0.0.1:47831/v1
+    model: qwen3.8-abliterated
+    cost: free
+    notes: Strata desktop app reached through its app gateway :47831 (route A/B 2026-11-05), alias qwen3.8-abliterated, keyless on 127.0.0.1; parallel 1, stopped during ComfyUI renders via strata-gen
+  openrouter-ultra:
+    base_url: https://openrouter.ai/api/v1
+    model: nvidia/nemotron-3-ultra-550b-a55b:free
+    key_env: OPENROUTER_API_KEY
+    cost: free
+    catalog: openrouter
+    notes: "Nemotron 3 Ultra 550B free (1M ctx, reasoning) via OpenRouter — daily quota applies"
+  openrouter-gemma:
+    base_url: https://openrouter.ai/api/v1
+    model: google/gemma-4-31b-it:free
+    key_env: OPENROUTER_API_KEY
+    cost: free
+    catalog: openrouter
+    notes: "Gemma 4 31B IT free (1M ctx, reasoning) via OpenRouter — daily quota applies"
+  utility:
+    base_url: https://ollama.com/v1
+    model: gpt-oss:120b
+    key_env: OLLAMA_API_KEY
+    cost: free
+    catalog: ollama-cloud
+    notes: gpt-oss 120B on the Ollama Cloud free plan. fleet eval 2026-11-06 - 14/16 at 3.9 s median; the old pick Nemotron 3.5 Lightning (NIM) 3/16, timing out at 180 s. Local Strata last (skipped during a timed test)
+    fallback: [nim-mistral, nim-minimax, openrouter-ultra, zen, tiny]
+  nim-lightning:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: nvidia/nemotron-3.5-lightning-30b-a3b
+    key_env: NVIDIA_API_KEY
+    cost: free
+    catalog: nvidia
+    notes: Nemotron 3.5 Lightning 30B on NIM (utility until 2026-11-06); fast on short prompts (1.4 s), 3/16 on the fleet eval (reasoning tasks time out)
+  main:
+    base_url: https://openrouter.ai/api/v1
+    model: nvidia/nemotron-3-ultra-550b-a55b:free
+    key_env: OPENROUTER_API_KEY
+    cost: free
+    catalog: openrouter
+    notes: Nemotron 3 Ultra 550B free (1M ctx, reasoning) via OpenRouter — daily quota applies; same model on NIM direct next
+    fallback: [ollama-cloud, nim-ultra]  # eval 2026-11-06: main 14/16 (62 s), ollama-cloud 13/16 (3.4 s), nim-ultra 11/16 (NIM timeouts)
+  best:
+    base_url: claude://anthropic
+    cli: claude
+    model: claude-opus-5-5
+    effort: max
+    cost: claude
+    notes: Strongest model we can reach - Artificial Analysis index 2026-11-06 Opus 5.5 max 59, GPT-6 Astra max 57, Opus 5.5 high 52, Gemini 4 Argon high 50. Claude subscription via the claude CLI (needs a live login), text only, named only (never auto)
+    fallback: [gpt, agy-opus, gemini-argon, nim-ultra, main]
+    daily_cap: 40
+  gpt:
+    base_url: codex://openai
+    cli: codex
+    model: gpt-6-astra
+    effort: max
+    cost: claude
+    notes: GPT-6 Astra at max effort through codex exec on the ChatGPT subscription (AA 57; 22 s on a short puzzle), read-only sandbox, takes images, named only (never auto)
+    daily_cap: 30
+  vision:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: nvidia/nemotron-3.5-super-vl-120b-a12b
+    key_env: NVIDIA_API_KEY
+    cost: free
+    catalog: nvidia
+    notes: Nemotron 3.5 Super VL 120B on NIM free. Asset QC sheet 2026-11-08 (kenku_s33_grid) - named the real defect in 42 s (OpenHuman owner session - 3/3); Gemma 4 31B timed out at 240 s, Llama 3.2 90B invented panels. Reasoning model - leave max_tokens unset (700 gave empty content)
+    fallback: [openrouter-gemma, nim-gemma]
+  nim-gemma:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: google/gemma-4-31b-it
+    key_env: NVIDIA_API_KEY
+    cost: free
+    catalog: nvidia
+    notes: Gemma 4 31B on NIM free - fast on simple pictures (1.7 s on text/colour, 2026-11-06), but timed out at 240 s on an asset QC sheet (2026-11-08)
+  # Provider tiers added 2026-11-06 (one per provider/model family; models picked from each live /models list).
+  nim-ultra:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: nvidia/nemotron-3-ultra-550b-a55b
+    key_env: NVIDIA_API_KEY
+    cost: free
+    catalog: nvidia
+    notes: Nemotron 3 Ultra 550B on NIM direct (same model as main, no OpenRouter daily cap); ~17 s reasoning
+  nim-vl:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: nvidia/nemotron-3.5-super-vl-120b-a12b
+    key_env: NVIDIA_API_KEY
+    cost: free
+    catalog: nvidia
+    notes: Nemotron 3.5 Super VL 120B, NIM free, text+image, 0.7 s on a short prompt
+  nim-minimax:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: minimaxai/minimax-m3.1-flash
+    key_env: NVIDIA_API_KEY
+    cost: free
+    catalog: nvidia
+    notes: MiniMax M3.1 Flash on NIM free, ~2 s
+  nim-mistral:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: mistralai/mistral-large-4-1t-a52b
+    key_env: NVIDIA_API_KEY
+    cost: free
+    catalog: nvidia
+    notes: Mistral Large 4 (1T A52B) on NIM free, ~2.5 s
+  nim-step:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: stepfun-ai/step-5-preview
+    key_env: NVIDIA_API_KEY
+    cost: free
+    catalog: nvidia
+    notes: Step 5 preview on NIM free, ~1 s when the NIM queue is idle (timed out once 2026-11-06)
+  nim-glm:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: z-ai/glm-5.3-flash
+    key_env: NVIDIA_API_KEY
+    cost: free
+    catalog: nvidia
+    notes: GLM-5.3 Flash on NIM free (AA 28); 7/7 easy and 6/7 AIME 2026-11-06, ~22-30 s; good third voter
+  meta:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: meta/muse-glimmer-30b
+    key_env: NVIDIA_API_KEY
+    cost: free
+    catalog: nvidia
+    notes: Meta Muse Glimmer 30B via NIM free (no Meta Llama API key on this box); ~4 s
+  zen:
+    base_url: http://127.0.0.1:4097/v1
+    model: mimo-v2.6-flash-free
+    cost: free
+    catalog: opencode
+    notes: OpenCode Zen free model through ZenFreeBridge :4097 (opencode serve :4096; scheduled task ZenFreeBridge, owned by the OpenHuman cloud session). Direct Zen API answers 429 FreeUsageLimitError for free models. Bridge also serves big-pickle, glm-5.3-flash-free, deepseek-v4.1-flash-free. Forwards to the cloud - not private
+  go:
+    base_url: https://opencode.ai/zen/go/v1
+    model: deepseek-v4.1-flash
+    key_env: OPENCODE_GO_API_KEY
+    session_header: true
+    cost: flat
+    catalog: opencode-go
+    notes: OpenCode Go subscription (same model Pi uses); usage window cap (GoUsageLimitError 429 cools it down). OpenHuman's text slots run on Go (model-gate caps them at 1200/day), so fleet keeps a small share
+    daily_cap: 100
+  ollama-cloud:
+    base_url: https://ollama.com/v1
+    model: gpt-oss:120b
+    key_env: OLLAMA_API_KEY
+    cost: free
+    catalog: ollama-cloud
+    notes: "Ollama Cloud free plan; only gpt-oss:120b/20b, gemma4:31b, nemotron-3-super/ultra, beam are free (others 402, 2026-11-06)"
+  gemini:
+    base_url: agy://google
+    cli: agy
+    model: gemini-3.8-flash-medium
+    cost: flat
+    notes: Gemini 3.8 Flash on the Google subscription through Antigravity (agy -p); ~40 s per call (agent prompt ~28k tokens), so batch work into one ask
+    daily_cap: 150
+  gemini-argon:
+    base_url: agy://google
+    cli: agy
+    model: gemini-4-argon-high
+    cost: flat
+    notes: Gemini 4 Argon (high) on the Google subscription through Antigravity; hardest Gemini reasoning
+    daily_cap: 60
+  agy-opus:
+    base_url: agy://google
+    cli: agy
+    model: claude-opus-5-5-high
+    cost: claude
+    notes: Claude Opus 5.5 (high) on the Google subscription through Antigravity, not Claude credits; premium quota, so never picked by --tier auto
+    daily_cap: 40
+  claude-leader:
+    base_url: claude://anthropic
+    cli: claude
+    model: claude-fable-5-2
+    effort: low
+    cost: claude
+    notes: Fleet Leader first choice (Claude Fable 5.2, low effort) woken by OpenHuman Second in Command when Claude tokens are available.
+    daily_cap: 60
+    fallback: [codex-leader, gemini-argon, github-leader, agy-opus, go-pro, nim-ultra, openrouter-ultra, nim-mistral, muse, zen]
+  codex-leader:
+    base_url: codex://openai
+    cli: codex
+    model: gpt-6-astra
+    effort: low
+    cost: flat
+    notes: Fleet Leader second choice (GPT-6 Astra, low effort) woken when Claude is in cooldown.
+    daily_cap: 60
+    fallback: [gemini-argon, github-leader, agy-opus, go-pro, nim-ultra, openrouter-ultra, nim-mistral, muse, zen]
+  github-leader:
+    base_url: copilot://github
+    cli: copilot
+    model: github-copilot
+    cost: flat
+    notes: GitHub Copilot CLI Fleet Leader tier (fourth choice after Antigravity Orchestrator).
+    daily_cap: 100
+    fallback: [gemini-argon, agy-opus, go-pro, nim-ultra, openrouter-ultra, nim-mistral, muse, zen]
+  muse:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: meta/muse-glimmer-30b
+    key_env: NVIDIA_API_KEY
+    cost: free
+    catalog: nvidia
+    notes: Meta Muse Glimmer 30B via NIM free (alias for Muse communication and drafting).
+    fallback: [nim-mistral, openrouter-ultra, zen]
+  go-pro:
+    base_url: http://127.0.0.1:8790/opencode-go/v1
+    model: mimo-v2.6-pro
+    cost: flat
+    notes: OpenCode Go MiMo-V2.6-Pro through model-gate :8790.
+    daily_cap: 100
+    fallback: [zen, openrouter-ultra, nim-ultra]
+  zen-deepseek:
+    base_url: http://127.0.0.1:4097/v1
+    model: deepseek-v4.1-flash-free
+    cost: free
+    catalog: opencode
+    notes: OpenCode Zen free DeepSeek V4.1 Flash through ZenFreeBridge :4097.
+  zen-glm:
+    base_url: http://127.0.0.1:4097/v1
+    model: glm-5.3-flash-free
+    cost: free
+    catalog: opencode
+    notes: OpenCode Zen free GLM 5.3 Flash through ZenFreeBridge :4097.
+  gemini-api:
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai
+    model: gemini-3.8-flash
+    key_env: GEMINI_API_KEY
+    cost: metered
+    catalog: google
+    notes: Google AI Studio API key on prepaid credits (billable, 402 depleted 2026-11-06); the subscription is tier gemini. Never picked by --tier auto
+    daily_cap: 50
+routing:
+  cost_order:
+  - free
+  - flat
+  - metered
+  - claude
+  chains:
+    code:
+    - codex
+    - agy
+    - opencode
+    - pi
+    edit:
+    - codex
+    - agy
+    - opencode
+    - pi
+    review:
+    - codex
+    - agy
+    - opencode
+    research:
+    - agy
+    - opencode
+    - codex
+    local:  # local Flash-Next on Strata: pi is ~13x faster than opencode there (2026-11-06)
+    - pi
+    - opencode
+    text:
+    - opencode
+    - agy
+    - codex
+    media:
+    - agy
+    - opencode
+throttle:
+  default:
+    min_interval_s: 2
+    max_concurrent: 2
+    max_queue_s: 300
+    slot_ttl_s: 900
+  opencode.ai:443/zen:
+    min_interval_s: 4
+    max_concurrent: 2
+    max_queue_s: 300
+  127.0.0.1:47831/v1:
+    min_interval_s: 1
+    max_concurrent: 1
+    max_queue_s: 120
+    slot_ttl_s: 600
+  integrate.api.nvidia.com:443/v1:
+    min_interval_s: 1.5
+    max_concurrent: 4
+    max_queue_s: 90
+  openrouter.ai:443/api:
+    min_interval_s: 5
+    max_concurrent: 2
+    max_queue_s: 300
+board:
+  bd_path: C:\AI\tools\beads\bd.exe
+  dir: C:\AI\state\fleet\board
+  prefix: fl

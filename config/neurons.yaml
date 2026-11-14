@@ -1,0 +1,191 @@
+# Neurons = worker agents + model tiers + leader nodes grouped into brain regions.
+# threshold: activation needed to fire.
+# refractory_ticks: rest after firing (cooldown, in propagation ticks).
+# receptive_field: capabilities this neuron responds to.
+neurons:
+  claude:
+    region: prefrontal
+    kind: agent
+    threshold: 0.70
+    refractory_ticks: 2
+    receptive_field: [code, edit, shell, text, review, research]
+    notes: "Operator-class Claude worker (opt-in)."
+  codex:
+    region: prefrontal
+    kind: agent
+    threshold: 0.55
+    refractory_ticks: 2
+    receptive_field: [code, edit, shell, text, review]
+    notes: "Strong coder/reviewer (gpt-6-astra)."
+  muse-code:
+    region: prefrontal
+    kind: agent
+    threshold: 0.60
+    refractory_ticks: 2
+    receptive_field: [code, edit, shell, text, review, research]
+    notes: "Meta Muse Spark coding agent; recruited end-to-end between codex and claude."
+  claude-leader:
+    region: prefrontal
+    kind: tier
+    threshold: 0.75
+    refractory_ticks: 2
+    receptive_field: [leader, plan, review, research, text]
+    notes: "Claude Fable 5.2 low-effort leader (priority 1 when off cooldown)."
+  codex-leader:
+    region: prefrontal
+    kind: tier
+    threshold: 0.72
+    refractory_ticks: 2
+    receptive_field: [leader, plan, review, code, text]
+    notes: "GPT-6 Astra low-effort leader (priority 2 when off cooldown)."
+  gemini-argon:
+    region: prefrontal
+    kind: tier
+    threshold: 0.62
+    refractory_ticks: 1
+    receptive_field: [leader, plan, review, research, text]
+    notes: "Antigravity gemini-4-argon-high leader (priority 3)."
+  github-leader:
+    region: prefrontal
+    kind: tier
+    threshold: 0.65
+    refractory_ticks: 1
+    receptive_field: [leader, plan, review, code, text, github]
+    notes: "GitHub Copilot CLI leader / PR reviewer (priority 4)."
+  agy-opus:
+    region: prefrontal
+    kind: tier
+    threshold: 0.78
+    refractory_ticks: 2
+    receptive_field: [leader, review, reasoning, plan, text]
+    notes: "Claude Opus 5.5 via Google subscription."
+  best:
+    region: prefrontal
+    kind: tier
+    threshold: 0.85
+    refractory_ticks: 3
+    receptive_field: [text, reasoning, review]
+    notes: "Strongest tier. Highest threshold: only intense stimuli recruit it."
+
+  opencode:
+    region: motor
+    kind: agent
+    threshold: 0.35
+    refractory_ticks: 1
+    receptive_field: [code, edit, shell, text, local]
+    notes: "Bulk motor output (OpenCode Zen free)."
+  pi:
+    region: motor
+    kind: agent
+    threshold: 0.40
+    refractory_ticks: 1
+    receptive_field: [code, edit, shell, text, local]
+    notes: "Fast motor neuron; OpenRouter Nemotron free or Strata local."
+
+  agy:
+    region: association
+    kind: agent
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [code, edit, shell, text, research]
+    notes: "Antigravity association agent."
+  main:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, research, reasoning]
+    notes: "Primary OpenRouter Nemotron Ultra free tier."
+  gemini:
+    region: association
+    kind: tier
+    threshold: 0.45
+    refractory_ticks: 1
+    receptive_field: [text, research, reasoning, code]
+    notes: "Gemini 3.8 Flash Medium via agy subscription."
+  go-pro:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, code, review, leader]
+    notes: "OpenCode Go MiMo-V2.6-Pro."
+  nim-ultra:
+    region: association
+    kind: tier
+    threshold: 0.52
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, research, leader]
+    notes: "NVIDIA NIM Nemotron 3 Ultra 550B."
+  openrouter-ultra:
+    region: association
+    kind: tier
+    threshold: 0.52
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, research, leader]
+    notes: "OpenRouter Nemotron 3 Ultra 550B free."
+  nim-mistral:
+    region: association
+    kind: tier
+    threshold: 0.55
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, code]
+    notes: "NVIDIA NIM Mistral Large 4 1T."
+  muse:
+    region: association
+    kind: tier
+    threshold: 0.52
+    refractory_ticks: 1
+    receptive_field: [text, research, leader, comm]
+    notes: "Meta Muse Glimmer 30B via OpenRouter/NVIDIA."
+  zen:
+    region: association
+    kind: tier
+    threshold: 0.42
+    refractory_ticks: 1
+    receptive_field: [text, code, leader]
+    notes: "OpenCode Zen MiMo V2.6 Flash free."
+  zen-deepseek:
+    region: association
+    kind: tier
+    threshold: 0.46
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, code]
+    notes: "OpenCode Zen DeepSeek V4.1 Flash free."
+  zen-glm:
+    region: association
+    kind: tier
+    threshold: 0.48
+    refractory_ticks: 1
+    receptive_field: [text, reasoning]
+    notes: "OpenCode Zen GLM-5.3 Flash free."
+
+  openhuman:
+    region: memory
+    kind: agent
+    threshold: 0.45
+    refractory_ticks: 3
+    receptive_field: [text, schedule, unattended, leader, comm]
+    notes: "OpenHuman Second in Command: unattended/scheduled rhythm."
+  utility:
+    region: memory
+    kind: tier
+    threshold: 0.40
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, recall, leader]
+    notes: "Ollama Cloud gpt-oss:120b fast recall / summary."
+
+  strata:
+    region: sensory
+    kind: tier
+    threshold: 0.30
+    refractory_ticks: 1
+    receptive_field: [text, local, private]
+    notes: "Local Strata inference (tiny/local). First contact for private stimuli."
+  vision:
+    region: sensory
+    kind: tier
+    threshold: 0.45
+    refractory_ticks: 1
+    receptive_field: [vision, image, text]
+    notes: "Visual cortex (NVIDIA Nemotron 3.5 Super VL)."

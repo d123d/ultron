@@ -1,0 +1,69 @@
+# Directed weighted edges. Positive = excitatory, negative = inhibitory.
+# Learned weights in config/weights.json override these seed values.
+synapses:
+  # sensory -> memory / association
+  - {from: strata,           to: utility,          weight: 0.7}
+  - {from: strata,           to: main,             weight: 0.6}
+  - {from: vision,           to: main,             weight: 0.8}
+  - {from: vision,           to: agy,              weight: 0.6}
+  - {from: vision,           to: gemini,           weight: 0.6}
+
+  # association / memory -> prefrontal (synthesis recruits planning/review/leaders)
+  - {from: agy,              to: claude,           weight: 0.7}
+  - {from: agy,              to: codex,            weight: 0.6}
+  - {from: agy,              to: muse-code,        weight: 0.6}
+  - {from: agy,              to: gemini-argon,     weight: 0.7}
+  - {from: agy,              to: github-leader,    weight: 0.5}
+  - {from: main,             to: claude,           weight: 0.6}
+  - {from: main,             to: muse-code,        weight: 0.6}
+  - {from: main,             to: best,             weight: 0.5}
+  - {from: gemini,           to: gemini-argon,     weight: 0.6}
+  - {from: gemini,           to: agy-opus,         weight: 0.5}
+  - {from: go-pro,           to: github-leader,    weight: 0.5}
+  - {from: go-pro,           to: claude-leader,    weight: 0.4}
+  - {from: nim-ultra,        to: codex-leader,     weight: 0.4}
+  - {from: utility,          to: main,             weight: 0.5}
+  - {from: utility,          to: gemini,           weight: 0.4}
+
+  # prefrontal -> motor (plan becomes action)
+  - {from: claude,           to: codex,            weight: 0.6}
+  - {from: claude,           to: muse-code,        weight: 0.6}
+  - {from: claude,           to: opencode,         weight: 0.8}
+  - {from: claude,           to: pi,               weight: 0.7}
+  - {from: muse-code,        to: codex,            weight: 0.5}
+  - {from: muse-code,        to: opencode,         weight: 0.7}
+  - {from: muse-code,        to: pi,               weight: 0.6}
+  - {from: codex,            to: opencode,         weight: 0.7}
+  - {from: codex,            to: pi,               weight: 0.6}
+  - {from: github-leader,    to: opencode,         weight: 0.6}
+  - {from: gemini-argon,     to: opencode,         weight: 0.7}
+  - {from: gemini-argon,     to: pi,               weight: 0.5}
+  - {from: best,             to: codex,            weight: 0.7}
+  - {from: best,             to: opencode,         weight: 0.6}
+
+  # direct sensory / memory -> motor reflex arc
+  - {from: strata,           to: pi,               weight: 0.8}
+  - {from: strata,           to: opencode,         weight: 0.6}
+  - {from: utility,          to: opencode,         weight: 0.4}
+
+  # memory <-> association / leadership links
+  - {from: openhuman,        to: utility,          weight: 0.5}
+  - {from: openhuman,        to: claude-leader,    weight: 0.7}
+  - {from: openhuman,        to: codex-leader,     weight: 0.6}
+  - {from: openhuman,        to: gemini-argon,     weight: 0.6}
+  - {from: openhuman,        to: github-leader,    weight: 0.5}
+  - {from: openhuman,        to: muse,             weight: 0.5}
+  - {from: utility,          to: openhuman,        weight: 0.4}
+  - {from: zen,              to: openhuman,        weight: 0.3}
+  - {from: muse,             to: go-pro,           weight: 0.3}
+
+  # lateral inhibition inside regions
+  - {from: opencode,         to: pi,               weight: -0.5}
+  - {from: pi,               to: opencode,         weight: -0.5}
+  - {from: claude,           to: best,             weight: -0.4}
+  - {from: codex,            to: claude,           weight: -0.3}
+  - {from: muse-code,        to: codex,            weight: -0.3}
+  - {from: codex,            to: muse-code,        weight: -0.3}
+  - {from: claude-leader,    to: codex-leader,     weight: -0.4}
+  - {from: codex-leader,     to: gemini-argon,     weight: -0.4}
+  - {from: gemini-argon,     to: github-leader,    weight: -0.3}
