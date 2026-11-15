@@ -37,6 +37,7 @@ class Neuron:
         schema: dict | None = None,
         timeout_s: int = 180,
         allow_claude: bool = False,
+        private: bool = False,
     ) -> dict[str, Any] | None:
         """Record firing at `tick`, entering refractory rest; optionally invoke backing worker or tier."""
         self.fired_at = tick
@@ -57,6 +58,7 @@ class Neuron:
                 system=system,
                 schema=schema,
                 timeout_s=timeout_s,
+                private=private,
             )
             return {"kind": "tier", "neuron": self.name, "ok": r.valid is not False, "result": r.to_dict()}
 
@@ -64,10 +66,13 @@ class Neuron:
         if worker_id in loaded.tiers and self.name not in loaded.workers:
             from .llm import ask
 
-            r = ask(loaded, worker_id, prompt, system=system, schema=schema, timeout_s=timeout_s)
+            r = ask(loaded, worker_id, prompt, system=system, schema=schema, timeout_s=timeout_s, private=private)
             return {"kind": "tier", "neuron": self.name, "ok": r.valid is not False, "result": r.to_dict()}
 
         if self.name in loaded.workers:
+            if private:
+                return {"kind": "agent", "neuron": self.name, "ok": False,
+                        "error": "private stimulus: worker CLIs are not local execution"}
             from .card import TaskCard
             from .runner import RunOptions, run_card
 
