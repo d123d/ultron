@@ -513,7 +513,7 @@ def _final(text: str) -> str:
 
 
 def vote(reg: Registry, tier_spec: str, prompt: str, *, system: str | None = None, files: list[str] | tuple = (),
-         max_tokens: int | None = None, timeout_s: float = 180) -> AskResult:
+         max_tokens: int | None = None, timeout_s: float = 180, trust_weights: dict[str, float] | None = None) -> AskResult:
     """Ask every tier in a comma list at once (no fallbacks) and return the majority short answer."""
     tiers = _not_in_cooldown(_not_in_strata_test(reg, candidates(reg, tier_spec + ",")))
     if len(tiers) < 2:
@@ -533,10 +533,10 @@ def vote(reg: Registry, tier_spec: str, prompt: str, *, system: str | None = Non
     groups: dict[str, list[AskResult]] = {}
     for r in got:
         groups.setdefault(_final(r.text), []).append(r)
-    answer, winners = max(groups.items(), key=lambda kv: len(kv[1]))
+    answer, winners = max(groups.items(), key=lambda kv: (sum((trust_weights or {}).get(r.tier, 1.0) for r in kv[1]), len(kv[1])))
     best = winners[0]
     best.tier = ",".join(r.tier for r in winners)
-    best.data = {"answer": answer, "agree": len(winners), "of": len(got),
+    best.data = {"answer": answer, "agree": len(winners), "of": len(got), "weighted_score": round(sum((trust_weights or {}).get(r.tier, 1.0) for r in winners), 4),
                  "votes": {a: [r.tier for r in rs] for a, rs in groups.items()}}
     return best
 
