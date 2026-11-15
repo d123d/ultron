@@ -98,6 +98,13 @@ def _tier_key(tier: Tier) -> str:
     name = tier.key_env
     if not name:
         return os.environ.get("FLEET_LITELLM_KEY", "sk-fleet-local")
+    if value := _secret_or_none(name):
+        return value
+    raise FleetError(f"tier {tier.id}: key {name} not set (~/.secrets/.env or env)")
+
+
+def _secret_or_none(name: str) -> str | None:
+    """One secret by name: ~/.secrets/.env first (canonical), then the process env. None when unset."""
     try:
         for line in (Path.home() / ".secrets" / ".env").read_text(encoding="utf-8").splitlines():
             if line.startswith(name + "="):
@@ -105,9 +112,17 @@ def _tier_key(tier: Tier) -> str:
                     return value
     except OSError:
         pass
-    if os.environ.get(name):
-        return os.environ[name]
-    raise FleetError(f"tier {tier.id}: key {name} not set (~/.secrets/.env or env)")
+    return os.environ.get(name) or None
+
+
+def _secret(name: str) -> str:
+    if value := _secret_or_none(name):
+        return value
+    raise FleetError(f"secret {name} not set (~/.secrets/.env or env)")
+
+
+def _secret_opt(name: str) -> str:
+    return _secret_or_none(name) or ""
 
 
 def _dropped(e: Exception) -> bool:
@@ -256,6 +271,13 @@ def _post(reg: Registry, tier: Tier, messages: list[dict], *, max_tokens: int | 
         body["max_tokens"] = max_tokens
     if json_mode:
         body["response_format"] = {"type": "json_object"}
+    if tier.adapter:
+        from . import providers
+
+        url, headers, payload, mode = providers.build(tier, body, _secret, _secret_opt)
+        req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers=headers, method="POST")
+        with slot(reg, tier.base_url):
+            return providers.parse(tier.adapter, _send(req, tier, timeout_s), mode)
     key = _tier_key(tier)
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {key}"}
     if tier.session_header:
@@ -267,23 +289,28 @@ def _post(reg: Registry, tier: Tier, messages: list[dict], *, max_tokens: int | 
                                  "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
     req = urllib.request.Request(f"{tier.base_url.rstrip('/')}/chat/completions", data=json.dumps(body).encode(),
                                  headers=headers, method="POST")
+    with slot(reg, tier.base_url):  # spacing + concurrency, cross-process
+        return _send(req, tier, timeout_s)
+
+
+def _send(req: urllib.request.Request, tier: Tier, timeout_s: float) -> dict:
+    """One POST, with the fleet's retry-on-drop and error shaping. Caller holds the throttle slot."""
     for attempt in (1, 2):
-        with slot(reg, tier.base_url):  # spacing + concurrency, cross-process
-            try:
-                with urllib.request.urlopen(req, timeout=timeout_s) as r:
-                    return json.loads(r.read())
-            except urllib.error.HTTPError as e:
-                detail = redact(e.read().decode("utf-8", "replace")[:400])
-                retry_after: float | None = None
-                if (ra := e.headers.get("Retry-After")) is not None:
-                    try:
-                        retry_after = float(ra)
-                    except ValueError:
-                        pass
-                raise ProviderError(f"tier {tier.id} HTTP {e.code}: {detail}", status=e.code, retry_after_s=retry_after) from None
-            except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException) as e:
-                if attempt == 2 or not _dropped(e):
-                    raise ProviderError(f"tier {tier.id} unreachable at {tier.base_url}: {e}", down=True) from None
+        try:
+            with urllib.request.urlopen(req, timeout=timeout_s) as r:
+                return json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            detail = redact(e.read().decode("utf-8", "replace")[:400])
+            retry_after: float | None = None
+            if (ra := e.headers.get("Retry-After")) is not None:
+                try:
+                    retry_after = float(ra)
+                except ValueError:
+                    pass
+            raise ProviderError(f"tier {tier.id} HTTP {e.code}: {detail}", status=e.code, retry_after_s=retry_after) from None
+        except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException) as e:
+            if attempt == 2 or not _dropped(e):
+                raise ProviderError(f"tier {tier.id} unreachable at {tier.base_url}: {e}", down=True) from None
     raise AssertionError("unreachable")
 
 
@@ -593,3 +620,66 @@ def ask_many(reg: Registry, tier_spec: str, prompts: list[str], *, system: str |
         ledger.append({"type": "ask", "tier": tier.id, "cost": tier.cost, "status": "ok" if "text" in a else "error",
                        "duration_s": each, "batch": len(prompts), **({"error": a["error"]} if "error" in a else {})})
     return answers
+
+
+def embed(reg: Registry, text: str, tier_spec: str = "openai-embed", timeout_s: float = 60) -> list[float]:
+    """Embedding vector for one text via an embed tier's /embeddings endpoint (OpenAI-shaped)."""
+    for tid in candidates(reg, tier_spec):
+        tier = reg.tiers[tid]
+        body = {"model": tier.model, "input": text}
+        req = urllib.request.Request(f"{tier.base_url.rstrip('/')}/embeddings", data=json.dumps(body).encode(),
+                                     headers={"Content-Type": "application/json",
+                                              "Authorization": f"Bearer {_tier_key(tier)}"}, method="POST")
+        with slot(reg, tier.base_url):
+            data = _send(req, tier, timeout_s)
+        vec = data["data"][0]["embedding"]
+        ledger.append({"type": "embed", "tier": tid, "cost": tier.cost, "status": "ok"})
+        return [float(x) for x in vec]
+    raise FleetError(f"no usable embed tier in {tier_spec!r}")
+
+
+def ask_stream(reg: Registry, tier_spec: str, prompt: str, *, system: str | None = None,
+               timeout_s: float = 180, private: bool = False):
+    """Yield answer deltas as they arrive (SSE), then ledger the ask like ask().
+
+    Plain OpenAI-bearer tiers only; CLI and adapter tiers raise FleetError so the
+    caller can fall back to ask(). private=True restricts to local tiers, as ask().
+    """
+    cands = local_tiers(reg) if private else candidates(reg, tier_spec)
+    cands = _not_in_cooldown(_not_in_strata_test(reg, cands))
+    if not cands:
+        raise FleetError(f"no usable tier in {tier_spec!r}")
+    tier = reg.tiers[cands[0]]
+    if tier.cli or tier.adapter:
+        raise FleetError(f"tier {tier.id}: streaming needs a plain HTTP tier; use ask()")
+    _check_cap(tier)
+    messages = ([{"role": "system", "content": system}] if system else []) + [{"role": "user", "content": prompt}]
+    body = {"model": tier.model, "messages": messages, "temperature": 0.2, "stream": True}
+    req = urllib.request.Request(f"{tier.base_url.rstrip('/')}/chat/completions", data=json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json",
+                                          "Authorization": f"Bearer {_tier_key(tier)}"}, method="POST")
+    start = time.monotonic()
+    status, parts = "ok", []
+    try:
+        with slot(reg, tier.base_url), urllib.request.urlopen(req, timeout=timeout_s) as r:
+            for raw in r:
+                line = raw.decode("utf-8", "replace").strip()
+                if not line.startswith("data:"):
+                    continue
+                data = line[5:].strip()
+                if data == "[DONE]":
+                    break
+                try:
+                    delta = json.loads(data)["choices"][0]["delta"].get("content") or ""
+                except (ValueError, KeyError, IndexError):
+                    continue
+                if delta:
+                    parts.append(delta)
+                    yield delta
+    except Exception:
+        status = "error"
+        raise
+    finally:
+        ledger.append({"type": "ask", "tier": tier.id, "cost": tier.cost, "status": status, "stream": True,
+                       "duration_s": round(time.monotonic() - start, 2),
+                       "output_tokens": None, "input_tokens": None})
