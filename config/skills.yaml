@@ -18,3 +18,18 @@ skills:
     governs: [sensory, memory]
     role: "How new capabilities get acquired: discover skills at skills.sh, vet the SKILL.md, install. This is the network's neurogenesis pathway for procedures."
     level: full
+  openrouter-typescript-sdk:
+    source: OpenRouterTeam/skills via skills.sh (official)
+    governs: [association, memory]
+    role: "Direct control of cloud models from code: 300+ models via OpenRouter's unified API (callModel), model per call, tool use, streaming. One OPENROUTER_API_KEY reaches every major provider family."
+    level: full
+  mmx-cli:
+    source: MiniMax-AI/cli via skills.sh
+    governs: [association, sensory]
+    role: "MiniMax cloud from the terminal: text, image, video, speech, transcription, web search via the mmx CLI. The media route for the minimax-api tier."
+    level: full
+  cloud-providers:
+    source: Ultron-native (authored in this repo, 2026-11-14)
+    governs: [all]
+    role: "Provider access map: every direct API tier, CLI/subscription route and catalog-only provider, with key_env, endpoint rules and fallbacks. See docs/PROVIDERS.md."
+    level: full
