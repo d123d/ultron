@@ -20,6 +20,7 @@ class Trace:
     fired: list[str] = field(default_factory=list)
     ticks: list[dict[str, Any]] = field(default_factory=list)
     edges_used: list[tuple[str, str]] = field(default_factory=list)
+    circuit_broken: bool = False
 
     def __str__(self) -> str:
         return " -> ".join(self.fired) if self.fired else "(no neuron fired)"
@@ -97,12 +98,16 @@ class Network:
         respect_cooldowns: bool = False,
         stakes: str | None = None,
         carry: bool = False,
+        max_neurons: int | None = None,
+        coupling: str = "auto",
     ) -> Trace:
         for n in self.neurons.values():
             n.activation, n.fired_at, n.refractory_left = 0.0, None, 0
         if respect_cooldowns:
             self.apply_brainstem()
         trace = Trace(stimulus=stimulus, capability=capability)
+        if coupling == "tight" and max_neurons is None:
+            max_neurons = 1
         entry_boost = {
             "sensory": 1.0,
             "memory": 0.8,
@@ -152,7 +157,12 @@ class Network:
                 for (a, b), w in self.synapses.items():
                     if a == n.name and w < 0:
                         suppressed.add(b)
+                if max_neurons is not None and len(trace.fired) >= max_neurons:
+                    trace.circuit_broken = True
+                    break
             trace.ticks.append(tick_info)
+            if trace.circuit_broken:
+                break
             for n in fired_now:
                 for (a, b), w in self.synapses.items():
                     if a != n.name or b not in self.neurons:
@@ -281,6 +291,9 @@ class Network:
         dry_run: bool = False,
         save_path: str | Path | None = None,
         reg: registry.Registry | None = None,
+        max_neurons: int | None = None,
+        coupling: str = "auto",
+        reviewer: str | None = None,
     ) -> dict[str, Any]:
         """Propagate stimulus, execute via recruited neuron (unless dry_run), run cerebellum checks, and update weights."""
         loaded = reg or registry.load()
@@ -290,6 +303,8 @@ class Network:
             entry=entry,
             intensity=intensity,
             respect_cooldowns=not dry_run,
+            max_neurons=max_neurons,
+            coupling=coupling,
         )
         chosen = worker or tier or self._select_target(trace, loaded, capability=capability, allow_claude=allow_claude)
         if private:
@@ -350,6 +365,17 @@ class Network:
                 v = run_checks(Path(cwd or ".").resolve(), done_when)
                 success = bool(v.get("passed"))
                 result = {"kind": "cerebellum", "verify": v}
+            if success and reviewer and reviewer in self.neurons and reviewer != chosen:
+                rev = self.neurons[reviewer].fire(
+                    len(trace.ticks),
+                    prompt=f"Review outcome for: {stimulus}",
+                    capability="review",
+                    reg=loaded,
+                    cwd=cwd,
+                    timeout_s=timeout_s,
+                    allow_claude=allow_claude,
+                )
+                success = bool(rev and rev.get("ok"))
 
             from .costs import modulation as _cost_mod
 
@@ -368,6 +394,7 @@ class Network:
             "chosen": chosen,
             "success": success,
             "dry_run": dry_run,
+            "circuit_broken": trace.circuit_broken,
             "weights_saved": str(weights_file) if weights_file else None,
             "result": result,
         }
