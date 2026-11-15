@@ -33,3 +33,10 @@
 | strata tier (tiny/local aliases) | neuron `strata` | sensory — now executable, was trace-only |
 | 16 direct cloud API tiers (OpenAI, Anthropic, Mistral, Cohere, Groq, Cerebras, Together, Fireworks, DeepInfra, SambaNova, DeepSeek, xAI, Perplexity, Moonshot, MiniMax, Hugging Face) | neurons `*-api` | association / memory / prefrontal — see docs/PROVIDERS.md |
 | cloud provider skills (openrouter-typescript-sdk, mmx-cli, cloud-providers) | skill layer | all regions |
+
+## Added 2026-11-14 (Ultron v0.4.0 — all 9)
+
+Adapter neurons azure-api / bedrock-api / vertex-api / cloudflare-api (association),
+embedding neurons openai-embed / gemini-embed (memory), plus: providers status,
+bake-off->synapse learning, cost neuromodulation, streaming asks, sync --add
+scaffolding, weights merge, code-enforced privacy gate on fire.
