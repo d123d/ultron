@@ -31,6 +31,10 @@ under the tier's `key_env` — never in this repo.
 | MiniMax | minimax-api | api.minimax.io/v1 | MINIMAX_API_KEY | MiniMax-M2.7 |
 | Hugging Face | hf-api | router.huggingface.co/v1 | HF_TOKEN | moonshotai/Kimi-K2-Instruct |
 | OpenCode Go | go | opencode.ai/zen/go/v1 | OPENCODE_GO_API_KEY | deepseek-v4.1-flash |
+| Azure OpenAI (adapter) | azure-api | per-resource endpoint | AZURE_OPENAI_API_KEY | gpt-5.5 (deployment name) |
+| AWS Bedrock (adapter) | bedrock-api | bedrock-runtime.<region>.amazonaws.com | AWS_ACCESS_KEY_ID | openai.gpt-oss-120b |
+| Google Vertex (adapter) | vertex-api | aiplatform.googleapis.com | VERTEX_API_KEY | gemini-3.5-flash |
+| Cloudflare (adapter) | cloudflare-api | api.cloudflare.com/.../accounts/{account}/ai/v1 | CLOUDFLARE_API_TOKEN | @cf/openai/gpt-oss-120b |
 
 Every direct tier has a `fallback:` chain into free/flat tiers, so a missing
 or exhausted key degrades instead of failing the stimulus.
@@ -43,17 +47,32 @@ agy-opus) · GitHub Copilot via `copilot` (github, github-leader) ·
 Meta Muse via `muse` (muse-code) · OpenHuman (openhuman) ·
 OpenCode / Pi agents (opencode, pi) · local Strata (strata, tiny, local).
 
-## Catalog-only — adapter needed, do not fake a tier
+## Adapter tiers — direct since v0.4.0 (`src/ai_neural_network/providers.py`)
 
-These have no OpenAI-compatible Bearer endpoint, so a direct tier would
-only 401. Their models are reachable today via OpenRouter and NIM.
+These four have no plain OpenAI-bearer endpoint, so they go through the
+adapter layer: build (URL/headers/payload) + parse (response -> OpenAI shape).
+Stdlib only, no new dependencies.
 
-| Provider | Why not direct | Reachable via |
-|---|---|---|
-| Azure OpenAI | per-resource endpoint, `api-key` header, deployment names | OpenRouter, models.dev catalog `azure` |
-| AWS Bedrock | SigV4 request signing | OpenRouter, catalog `amazon-bedrock` |
-| Google Vertex AI | OAuth / service-account tokens | gemini-api (AI Studio), OpenRouter, catalog `google-vertex` |
-| Cloudflare Workers AI | account id embedded in the URL | catalog `cloudflare-workers-ai` |
+| Provider | Tier | How the adapter speaks it | Secrets needed |
+|---|---|---|---|
+| Azure OpenAI | azure-api | `api-key` header, deployment name in URL, `?api-version=` | AZURE_OPENAI_API_KEY + AZURE_OPENAI_ENDPOINT (model = deployment name) |
+| AWS Bedrock | bedrock-api | Converse API, SigV4-signed by hand | AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY (AWS_REGION optional) |
+| Google Vertex AI | vertex-api | Express: `x-goog-api-key` + native generateContent; OAuth: OpenAI-compat endpoint | VERTEX_API_KEY, or GOOGLE_ACCESS_TOKEN / gcloud + VERTEX_PROJECT |
+| Cloudflare Workers AI | cloudflare-api | Bearer, `{account}` in URL resolved at call time | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID |
+
+## Also new in v0.4.0
+
+- `brain providers` — which tiers can fire today (key presence, adapter, cooldown).
+- `brain bakeoff --tiers a,b --apply` — eval scores fed back into synapses.
+- `brain remember` / `brain recall` — semantic memory via embedding tiers
+  (openai-embed, gemini-embed).
+- `brain spend` — estimated metered spend today; spend also scales the learn
+  modulation in `brain fire` (cost neuromodulation, floor x0.2 at budget).
+- `brain ask --stream` — SSE streaming on plain HTTP tiers.
+- `brain sync --add NAME` — scaffold a neuron + hub synapse for a registry entry.
+- `brain weights merge|export` — weights sync across brains/machines.
+- `brain fire --private` — privacy gate enforced in code: local tiers only,
+  workers refused (ask --private existed; fire now matches it).
 
 ## Skills that operate the providers
 
