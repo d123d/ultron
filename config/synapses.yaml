@@ -87,3 +87,25 @@ synapses:
   - {from: main,      to: nim-glm,         weight: 0.5}
   - {from: strata,    to: nim-lightning,   weight: 0.6}
   - {from: zen,       to: go,              weight: 0.5}
+
+  # pathways added 2026-11-14 (Ultron review): direct cloud provider neurons wired in
+  - {from: main,      to: openai-api,      weight: 0.5}
+  - {from: main,      to: anthropic-api,   weight: 0.5}
+  - {from: openai-api, to: codex-leader,   weight: 0.4}
+  - {from: anthropic-api, to: claude-leader, weight: 0.4}
+  - {from: main,      to: mistral-api,     weight: 0.4}
+  - {from: main,      to: cohere-api,      weight: 0.4}
+  - {from: utility,   to: groq-api,        weight: 0.6}
+  - {from: utility,   to: cerebras-api,    weight: 0.6}
+  - {from: main,      to: together-api,    weight: 0.4}
+  - {from: main,      to: fireworks-api,   weight: 0.4}
+  - {from: main,      to: deepseek-api,    weight: 0.5}
+  - {from: agy,       to: xai-api,         weight: 0.4}
+  - {from: agy,       to: perplexity-api,  weight: 0.6}
+  - {from: main,      to: hf-api,          weight: 0.4}
+  - {from: main,      to: moonshot-api,    weight: 0.4}
+  - {from: utility,   to: minimax-api,     weight: 0.4}
+  - {from: main,      to: sambanova-api,   weight: 0.4}
+  - {from: main,      to: deepinfra-api,   weight: 0.4}
+  - {from: openai-api, to: opencode,       weight: 0.4}
+  - {from: anthropic-api, to: muse-code,   weight: 0.4}
