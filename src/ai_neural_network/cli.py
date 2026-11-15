@@ -12,7 +12,7 @@ from .board import Board
 from .card import TaskCard, load_card
 from .doctor import doctor
 from .evals import evaluate
-from .llm import ask, ask_many, vote
+from .llm import ask, ask_many, ask_stream, vote
 from .network import Network
 from .procs import FleetError, ensure_full_path
 from .runner import RunOptions, run_card
@@ -116,6 +116,7 @@ def main(argv: list[str] | None = None) -> int:
         s.add_argument("--schema")
         s.add_argument("--timeout", type=int, default=180)
         s.add_argument("--allow-claude", action="store_true")
+        s.add_argument("--private", action="store_true", help="privacy gate: execute only on local tiers (enforced in code)")
         s.add_argument("--dry-run", action="store_true")
         s.add_argument("--json", action="store_true")
 
@@ -134,6 +135,9 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--json", action="store_true")
 
     s = sub.add_parser("sync", help="neurogenesis check: registry workers/tiers that have no neuron yet")
+    s.add_argument("--add", help="scaffold a neuron (+ synapse) for this registry name and exit")
+    s.add_argument("--region", default="association")
+    s.add_argument("--capability", action="append", default=[])
     s.add_argument("--json", action="store_true")
 
     s = sub.add_parser("workers", help="list neurons/workers and tiers")
@@ -180,6 +184,7 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--file", action="append", default=[])
     s.add_argument("--image", action="append", default=[])
     s.add_argument("--private", action="store_true")
+    s.add_argument("--stream", action="store_true", help="stream answer deltas as they arrive (plain HTTP tiers)")
     s.add_argument("--vote", action="store_true")
     s.add_argument("--many")
     s.add_argument("--max-tokens", type=int)
@@ -196,6 +201,36 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--tiers", required=True)
     s.add_argument("--only")
     s.add_argument("--timeout", type=int, default=180)
+    s.add_argument("--json", action="store_true")
+
+    s = sub.add_parser("providers", help="cloud provider access: key presence, adapter, cooldown per tier")
+    s.add_argument("--json", action="store_true")
+
+    s = sub.add_parser("bakeoff", help="score tiers on the fixed eval set; --apply feeds scores into synapses")
+    s.add_argument("--tiers", required=True)
+    s.add_argument("--only")
+    s.add_argument("--timeout", type=int, default=180)
+    s.add_argument("--apply", action="store_true")
+    s.add_argument("--json", action="store_true")
+
+    s = sub.add_parser("spend", help="today's estimated metered spend and the cost-neuromodulation scalar")
+    s.add_argument("--budget", type=float, default=5.0)
+    s.add_argument("--json", action="store_true")
+
+    s = sub.add_parser("remember", help="store an episode in semantic memory (embeddings)")
+    s.add_argument("text")
+    s.add_argument("--tier", default="openai-embed")
+    s.add_argument("--json", action="store_true")
+
+    s = sub.add_parser("recall", help="recall episodes similar to a query (embeddings)")
+    s.add_argument("query")
+    s.add_argument("--k", type=int, default=5)
+    s.add_argument("--tier", default="openai-embed")
+    s.add_argument("--json", action="store_true")
+
+    s = sub.add_parser("weights", help="weights sync: merge another brain's weights.json, or export yours")
+    s.add_argument("action", choices=["merge", "export"])
+    s.add_argument("path")
     s.add_argument("--json", action="store_true")
 
     s = sub.add_parser("board", help="beads task board")
@@ -330,6 +365,7 @@ def _dispatch(args) -> int:
             schema=schema,
             timeout_s=args.timeout,
             allow_claude=args.allow_claude,
+            private=getattr(args, "private", False),
             dry_run=args.dry_run,
             reg=reg,
         )
@@ -372,6 +408,14 @@ def _dispatch(args) -> int:
         msg = (f"sleep: decayed all weights by {args.decay}; pruned {len(result['pruned'])} synapses; "
                f"weights -> {result['weights_saved']}")
         _out(result, args.json, msg)
+        return 0
+
+    if args.cmd == "sync" and args.add:
+        from .scaffold import add_neuron
+
+        data = add_neuron(args.add, region=args.region, capabilities=args.capability or ["text"],
+                          config_dir=args.config)
+        _out(data, args.json, f"neuron {args.add} scaffolded in {data['neurons_file']} (+ synapse main->{args.add})")
         return 0
 
     if args.cmd == "sync":
@@ -462,6 +506,13 @@ def _dispatch(args) -> int:
         if not prompt:
             raise FleetError("give a prompt or --prompt-file")
         schema = json.loads(Path(args.schema).read_text(encoding="utf-8")) if args.schema else None
+        if args.stream:
+            for delta in ask_stream(reg, args.tier, prompt, system=args.system, timeout_s=args.timeout,
+                                    private=args.private):
+                sys.stdout.write(delta)
+                sys.stdout.flush()
+            print()
+            return 0
         if args.vote:
             r = vote(
                 reg,
@@ -507,6 +558,67 @@ def _dispatch(args) -> int:
             for r in rows
         ]
         _out(rows, args.json, _table(table_rows, ["tier", "model", "score", "median_s", "misses"]))
+        return 0
+
+    if args.cmd == "providers":
+        from .doctor import provider_rows
+
+        rows = provider_rows(reg)
+        cols = ["id", "provider", "model", "cost", "adapter", "key_env", "key_present", "cooldown_until"]
+        _out(rows, args.json, _table(rows, cols))
+        return 0
+
+    if args.cmd == "bakeoff":
+        from .evals import apply_scores
+
+        tiers = [x.strip() for x in args.tiers.split(",") if x.strip()]
+        rows = evaluate(reg, tiers, only=args.only.split(",") if args.only else None, timeout_s=args.timeout)
+        changed = apply_scores(net, rows) if args.apply else []
+        if args.apply and changed:
+            net.save_weights()
+        data = {"rows": rows, "applied": changed}
+        table_rows = [{**r, "score": f"{r['score']}/{r['n']}", "misses": "; ".join(r["misses"])[:100]} for r in rows]
+        _out(data, args.json, _table(table_rows, ["tier", "model", "score", "median_s", "misses"]) +
+             (f"\napplied to {len(changed)} synapses" if args.apply else ""))
+        return 0
+
+    if args.cmd == "spend":
+        from .costs import modulation, spend_today
+
+        per = spend_today(reg)
+        data = {"per_tier_usd": per, "total_usd": round(sum(per.values()), 6), "budget_usd": args.budget,
+                "modulation": round(modulation(reg, args.budget), 3)}
+        rows = [{"tier": k, "usd": v} for k, v in sorted(per.items(), key=lambda kv: -kv[1])]
+        _out(data, args.json, _table(rows, ["tier", "usd"]) +
+             f"\ntotal ${data['total_usd']} of ${args.budget} budget; learn modulation x{data['modulation']}")
+        return 0
+
+    if args.cmd == "remember":
+        from .memory_embed import remember
+
+        data = remember(reg, args.text, args.tier)
+        _out(data, args.json, f"stored ({data['dims']} dims): {data['stored'][:80]}")
+        return 0
+
+    if args.cmd == "recall":
+        from .memory_embed import recall
+
+        rows = recall(reg, args.query, k=args.k, tier_spec=args.tier)
+        _out(rows, args.json, _table(rows, ["score", "text"]))
+        return 0
+
+    if args.cmd == "weights":
+        if args.action == "export":
+            src = Path(args.config) / "weights.json" if args.config else None
+            from .paths import config_dir as _cd
+
+            src = src or (_cd() / "weights.json")
+            Path(args.path).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+            _out({"exported": args.path}, args.json, f"weights exported to {args.path}")
+            return 0
+        other = json.loads(Path(args.path).read_text(encoding="utf-8"))
+        data = net.merge_weights(other)
+        _out(data, args.json, f"merged {len(data['merged'])} edges, adopted {len(data['added'])} new edges; weights saved")
         return 0
 
     if args.cmd == "board":
