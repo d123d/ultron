@@ -120,6 +120,16 @@ def check_jobs(reg: Registry) -> list[str]:
     return bad
 
 
+def _by_results(kind: str, tiers: list[str]) -> list[str]:
+    """The job's hand-set order, with any model whose last three tries at this job all failed moved to the back.
+    It is still tried last, so one success brings it back to its place."""
+    tries: dict[str, list[bool]] = {}
+    for r in ledger.read():
+        if r.get("job") == kind and r.get("type") in ("job", "job-try"):
+            tries.setdefault(r.get("tier"), []).append(r.get("status") == "ok")
+    return sorted(tiers, key=lambda t: len(tries.get(t, [])) >= 3 and not any(tries[t][-3:]))
+
+
 def run_job(reg: Registry, kind: str, prompt: str, *, cwd: str | None = None, done_when: list[str] | None = None,
             system: str | None = None, images: list[str] | tuple = (), files: list[str] | tuple = (),
             timeout_s: int | None = None, allow_claude: bool = False) -> dict[str, Any]:
@@ -153,12 +163,13 @@ def run_job(reg: Registry, kind: str, prompt: str, *, cwd: str | None = None, do
     if job.get("private"):
         r = ask(reg, "local", prompt, system=system, files=files, timeout_s=timeout_s, private=True)
         return done("ok", r.tier, text=r.text, model=r.model)
-    for spec in job["tiers"]:
+    for spec in _by_results(kind, job["tiers"]):
         try:  # "spec," = this model alone: the job's own list is the fallback order
             r = ask(reg, spec + ",", prompt, system=system, files=files, images=images, timeout_s=timeout_s)
             return done("ok", r.tier, text=r.text, model=r.model, duration_s=r.duration_s, skipped=errors)
         except FleetError as e:
             errors.append(f"{spec}: {str(e)[:140]}")
+            ledger.append({"type": "job-try", "job": kind, "tier": spec, "status": "error"})
     done("error", "-")
     raise FleetError(f"job {kind}: every model failed: " + " | ".join(errors))
 

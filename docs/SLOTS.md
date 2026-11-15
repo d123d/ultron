@@ -96,3 +96,9 @@ the only check was "a commit exists". The gate agreed with a human look on every
 Worker order from the same ten cards: Pi finished 5 of 5; OpenCode finished 2 and failed 5 at
 start (its free model has no image input); Antigravity ran out of credits after 7 minutes.
 Failover carried every card without an operator. Pi now goes ahead of OpenCode for code and edit.
+
+## Job order learns from results (2026-11-15)
+
+Each failed try is ledgered (`job-try`). A model whose last three tries at a job all failed moves to the back of that job's list; it is still tried last, and one success restores its place. The hand-set order in `config/jobs.yaml` stays the prior.
+
+Live-verified 2026-11-15: MCP server (11 tools; `brain_job` and `brain_slots` answered), OpenHuman worker round trip (`job unattended` returned through the card queue). Not verified: `private` job (local model was not loaded).

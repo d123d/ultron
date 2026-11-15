@@ -122,3 +122,12 @@ def test_qc_fails_on_bad_or_missing_renders(tmp_path, monkeypatch):
     assert out["checked"] == 2 and out["ok"] is False
     (tmp_path / "bad.png").unlink()
     assert slots.qc_images(reg, str(tmp_path))["ok"] is True
+
+
+def test_job_order_demotes_a_model_that_keeps_failing(monkeypatch):
+    rows = [{"type": "job-try", "job": "quick", "tier": "a", "status": "error"}] * 3
+    monkeypatch.setattr(slots.ledger, "read", lambda: rows)
+    assert slots._by_results("quick", ["a", "b", "c"]) == ["b", "c", "a"]  # a goes last, still tried
+    assert slots._by_results("reason", ["a", "b"]) == ["a", "b"]  # other jobs keep their order
+    monkeypatch.setattr(slots.ledger, "read", lambda: rows + [{"type": "job", "job": "quick", "tier": "a", "status": "ok"}])
+    assert slots._by_results("quick", ["a", "b", "c"]) == ["a", "b", "c"]  # one success restores it
