@@ -172,6 +172,7 @@ def evaluate(reg: Registry, tiers: list[str], only: list[str] | None = None, tim
     with ThreadPoolExecutor(len(groups)) as ex:
         rows = [r for rs in ex.map(lambda g: [run_tier(reg, t, tasks, timeout_s) for t in g], groups.values()) for r in rs]
     path = state_dir() / "evals.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "a", encoding="utf-8") as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")

@@ -6,12 +6,23 @@ import os
 import tempfile
 import threading
 import time
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from .paths import health_path
 
 _LOCK = threading.RLock()
+
+
+@contextmanager
+def _locked():
+    """Read-modify-write of health.json, safe across threads and processes (the daemon and CLI calls both write
+    cooldowns; a thread lock alone lost updates)."""
+    from .throttle import _locked as file_lock
+
+    with _LOCK, file_lock():
+        yield
 
 
 def now() -> datetime:
@@ -64,7 +75,7 @@ def in_cooldown(worker: str) -> bool:
 
 
 def set_cooldown(worker: str, seconds: int, reason: str) -> None:
-    with _LOCK:
+    with _locked():
         data = load()
         e = _entry(data, worker)
         e["cooldown_until"] = iso(now() + timedelta(seconds=seconds))
@@ -74,7 +85,7 @@ def set_cooldown(worker: str, seconds: int, reason: str) -> None:
 
 
 def clear_cooldown(worker: str) -> None:
-    with _LOCK:
+    with _locked():
         data = load()
         e = _entry(data, worker)
         e["cooldown_until"], e["reason"] = None, None
@@ -82,14 +93,14 @@ def clear_cooldown(worker: str) -> None:
 
 
 def record_ok(worker: str) -> None:
-    with _LOCK:
+    with _locked():
         data = load()
         _entry(data, worker)["last_ok"] = iso(now())
         _save(data)
 
 
 def record_error(worker: str, msg: str) -> None:
-    with _LOCK:
+    with _locked():
         data = load()
         _entry(data, worker)["last_error"] = msg[:500]
         _save(data)
