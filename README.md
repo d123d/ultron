@@ -58,6 +58,11 @@ v0.4.0 adds: `brain providers` (who can fire today), `brain bakeoff --apply`
 `brain sync --add` (neurogenesis scaffolding), `brain weights merge|export`
 (weights sync), and a code-enforced privacy gate on `brain fire --private`.
 
+v0.5.0 adds provider slots (`brain slots`, one per provider with its model list), job slots
+(`brain job <kind>`, best model per kind of work, `config/jobs.yaml`), any-model asks
+(`--tier provider:model`), a board daemon that launches with Windows (`brain daemon`), and working
+OpenHuman / Copilot / Muse integration. See `docs/SLOTS.md`.
+
 ## Learning
 
 Hebbian, with the merge's upgrades: **STDP-lite** (causal firing order

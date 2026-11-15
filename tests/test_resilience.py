@@ -38,13 +38,13 @@ def _two_neuron_network() -> Network:
 
 def test_coupling_tight_caps_fired_and_breaks_circuit():
     net = _two_neuron_network()
-    trace = net.excite("a", intensity=1.0, execute=False, coupling="tight")
+    trace = net.excite("a", intensity=1.0, coupling="tight")
     assert len(trace.fired) <= 1
     assert trace.circuit_broken is True
 
 
 def test_max_neurons_circuit_breaker():
     net = _two_neuron_network()
-    trace = net.excite("a", intensity=1.0, execute=False, max_neurons=1)
+    trace = net.excite("a", intensity=1.0, max_neurons=1)
     assert len(trace.fired) <= 1
     assert trace.circuit_broken is True

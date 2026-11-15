@@ -49,11 +49,13 @@ class Board:
                 raise FleetError(f"bd init failed: {(p.stderr or p.stdout).strip()[:300]}")
         return self.dir
 
-    def add(self, card: TaskCard, deps: list[str] | tuple = (), priority: int = 2) -> str:
+    def add(self, card: TaskCard, deps: list[str] | tuple = (), priority: int = 2, hold: bool = False) -> str:
         self.ensure()
         desc = f"{card.goal}\n\n```fleet-card\n{json.dumps(card.to_dict(), indent=2)}\n```"
         args = ["create", card.title, "-t", "task", "-p", str(priority), "-d", desc]
         labels = [f"cap:{card.capability}"] + ([f"worker:{card.worker}"] if card.worker else [])
+        if hold:  # work() skips this label: the card (and all that depend on it) waits for `board release`
+            labels.append("fleet:needs-operator")
         args += ["-l", ",".join(labels)]
         if deps:
             args += ["--deps", ",".join(f"blocked-by:{d}" for d in deps)]
@@ -86,6 +88,9 @@ class Board:
         data = self._run("update", issue_id, "--claim", actor=actor, check=False)
         issues = self._issues(data)
         return bool(issues) and issues[0].get("assignee") == actor
+
+    def release(self, issue_id: str) -> None:
+        self._run("label", "remove", issue_id, "fleet:needs-operator")
 
     def close(self, issue_id: str, actor: str, reason: str) -> None:
         self._run("close", issue_id, "--reason", reason[:500], actor=actor)

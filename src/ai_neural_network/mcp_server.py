@@ -293,6 +293,28 @@ async def brain_workers() -> str:
     )
 
 
+@mcp.tool()
+@_guard
+async def brain_job(kind: str, prompt: str, cwd: str = "", done_when: list[str] | None = None,
+                    images: list[str] | None = None, files: list[str] | None = None, timeout_s: int = 0) -> str:
+    """Do work in a job slot: Ultron picks the best model for that kind of job and falls through on failure.
+    Kinds (config/jobs.yaml): quick, bulk, extract, reason, plan, verify, vision, research, draft, private,
+    leader, best, and the agent-harness jobs code, review, investigate, local-code, unattended (these need cwd)."""
+    from . import slots
+
+    return _j(await _thread(slots.run_job, registry.load(), kind, prompt, cwd=cwd or None, done_when=done_when,
+                            images=images or [], files=files or [], timeout_s=timeout_s or None))
+
+
+@mcp.tool()
+@_guard
+async def brain_slots() -> str:
+    """Provider slots (one per provider: concurrency, key state, model list) and the job slots."""
+    from . import slots
+
+    return _j({"providers": slots.provider_slots(registry.load()), "jobs": slots.load_jobs()})
+
+
 def main() -> None:
     mcp.run()
 

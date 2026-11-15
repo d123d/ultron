@@ -1,0 +1,77 @@
+# Job slots: each kind of work has its own ordered list of models (best for the job first).
+# `brain job <kind> "<prompt>"` tries them in order; a failed, capped or cooled model falls through.
+# A tier entry is a registry tier id, or `provider:model` for any model in that provider's slot
+# (`brain slots --models <provider>`). mode: ask (default) | vote | run (agent harness in a repo).
+# Free and flat-rate models come first; metered/Claude-quota models only where the job needs them.
+jobs:
+  quick:
+    note: short answers, classification, glue. Fastest free models.
+    # live 2026-11-14: nim-mistral 0.9 s. Ollama Cloud (utility) answered 402 on every model that day, so it
+    # sits behind NIM. Cerebras (402 no credits) and SambaNova (401 bad key) are left out until re-keyed.
+    tiers: [nim-mistral, nim-minimax, utility, zen, go-pro]
+  bulk:
+    note: many cheap text jobs (summaries, rewrites, extraction). Spread across free providers.
+    tiers: [nim-minimax, zen, zen-deepseek, nim-mistral, utility, openrouter-gemma]
+  extract:
+    note: structured JSON output from text.
+    tiers: [nim-mistral, go-pro, utility, zen-glm]
+  reason:
+    note: hard single-step reasoning, maths, design trade-offs.
+    tiers: [nim-ultra, main, gemini-argon, codex-leader, nim-glm]
+    timeout_s: 300
+  plan:
+    note: plans and task breakdowns for the coding harnesses.
+    tiers: [gemini-argon, nim-ultra, main, codex-leader, go-pro]
+    timeout_s: 300
+  verify:
+    note: independent answers from three providers, majority wins.
+    mode: vote
+    tiers: [main, nim-glm, nim-minimax]
+  vision:
+    note: look at an image (asset QC, screenshots).
+    tiers: [vision, openrouter-gemma, nim-gemma, gemini]
+    timeout_s: 240
+  research:
+    note: synthesis over long context (1M-context free models first).
+    tiers: [openrouter-ultra, nim-ultra, gemini, utility]
+    timeout_s: 300
+  draft:
+    note: creative and communication drafting.
+    tiers: [muse, nim-mistral, go-pro, zen]
+  private:
+    note: nothing leaves this PC (local Strata only; fails while Strata is unloaded).
+    private: true
+    tiers: [strata]
+  leader:
+    note: executive review and directives (subscription models, low effort).
+    tiers: [claude-leader, codex-leader, gemini-argon, github-leader, go-pro, nim-ultra]
+  best:
+    note: strongest reachable model. Spends Claude/ChatGPT subscription quota; name it deliberately.
+    tiers: [best, gpt, agy-opus, gemini-argon, nim-ultra]
+    timeout_s: 600
+  code:
+    note: write or change code in a repo (agent harness, verified by done-when checks).
+    mode: run
+    capability: code
+    timeout_s: 1800
+  review:
+    note: review a diff or repo with an agent harness.
+    mode: run
+    capability: review
+    timeout_s: 900
+  investigate:
+    note: agent harness research inside a repo or on the web.
+    mode: run
+    capability: research
+    timeout_s: 900
+  local-code:
+    note: coding on the local model (pi on Strata).
+    mode: run
+    capability: local
+    timeout_s: 1800
+  unattended:
+    note: scheduled or Telegram-facing work handed to OpenHuman's card queue.
+    mode: run
+    capability: unattended
+    worker: openhuman
+    timeout_s: 900

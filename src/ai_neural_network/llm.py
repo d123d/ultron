@@ -22,7 +22,7 @@ import urllib.error
 import urllib.request
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -32,7 +32,7 @@ import jsonschema
 from . import health, ledger
 from .paths import state_dir
 from .procs import FleetError, redact
-from .registry import Registry, Tier
+from .registry import Registry, Tier, provider_name
 from .throttle import Busy, provider_key, slot, spread_order
 
 # Present while a timed Strata test runs; local tiers must stay quiet so they do not skew it.
@@ -213,7 +213,7 @@ def _retry_at_s(msg: str) -> float | None:
 
 def _cli_post(tier: Tier, messages: list[dict], timeout_s: float, images: list[str] | tuple = ()) -> dict:
     """Subscription tier: one CLI print call (agy, codex, claude or copilot), returned shaped like a chat completion."""
-    from .adapters import Adapter, AgyAdapter, ClaudeAdapter
+    from .adapters import AgyAdapter, ClaudeAdapter
 
     work = state_dir() / "cli-ask" / uuid.uuid4().hex  # own empty dir: no repo context, no clashes between calls
     work.mkdir(parents=True)
@@ -243,8 +243,9 @@ def _cli_post(tier: Tier, messages: list[dict], timeout_s: float, images: list[s
             if m := re.search(r"tokens used\s+([\d,]+)", p.stdout + p.stderr):
                 usage["prompt_tokens"] = int(m.group(1).replace(",", ""))
         elif tier.cli == "copilot":
-            r = Adapter().parse(p)
-            reply, error = r.reply, r.error
+            # Adapter.parse wants the runner's ProcResult (.rc); this is a CompletedProcess (crashed 2026-11-14)
+            reply = p.stdout.strip()
+            error = None if p.returncode == 0 else (p.stderr.strip()[-500:] or f"exit {p.returncode}")
         else:
             r = (AgyAdapter() if tier.cli == "agy" else ClaudeAdapter()).parse(p)
             if tier.cli == "agy" and not r.reply and not r.error:  # agy sometimes ends a turn with no text (4/16 on 11-06)
@@ -269,8 +270,11 @@ def _post(reg: Registry, tier: Tier, messages: list[dict], *, max_tokens: int | 
     body: dict[str, Any] = {"model": tier.model, "messages": messages, "temperature": 0.2}
     if max_tokens:
         body["max_tokens"] = max_tokens
-    if json_mode:
+    if tier.id == "anthropic-api":  # compat layer: temperature<1 and json_object return 400
+        body.pop("temperature")
+    elif json_mode:
         body["response_format"] = {"type": "json_object"}
+    body.update(tier.extra)
     if tier.adapter:
         from . import providers
 
@@ -349,6 +353,11 @@ def candidates(reg: Registry, tier_spec: str) -> list[str]:
         free = [t for t in reg.tiers if reg.tiers[t].cost in ("free", "flat") and not reg.tiers[t].cli]
         return sorted(free, key=lambda t: (rank.get(reg.tiers[t].cost, 99), t))
     ids = list(dict.fromkeys(s.strip() for s in tier_spec.split(",") if s.strip())) if "," in tier_spec else [tier_spec]
+    for spec in ids:  # "provider:model": any model in that provider's slot, as a one-off tier
+        prov, _, model = spec.partition(":")
+        base = next((t for t in reg.tiers.values() if provider_name(t) == prov), None)
+        if spec not in reg.tiers and base and model:
+            reg.tiers[spec] = replace(base, id=spec, model=model, fallback=[], notes=f"ad-hoc model on {prov}")
     unknown = [i for i in ids if i not in reg.tiers]
     if unknown:
         raise FleetError(f"unknown tier {unknown[0]!r}; known: {', '.join(reg.tiers)}")
@@ -380,6 +389,14 @@ def _not_in_cooldown(ids: list[str]) -> list[str]:
     if not ok:
         raise FleetError(f"all requested tiers are in cooldown ({'; '.join(blocked)}); wait or pass other tiers")
     return ok
+
+
+NO_CREDIT_COOLDOWN_S = 6 * 3600
+
+
+def _account_tiers(reg: Registry, tier: Tier) -> list[str]:
+    """Every tier on the same account as this one (same endpoint and key)."""
+    return [t.id for t in reg.tiers.values() if t.base_url == tier.base_url and t.key_env == tier.key_env and not t.cli]
 
 
 def _is_quota_err(reg: Registry, err: ProviderError) -> bool:
@@ -517,13 +534,18 @@ def ask(reg: Registry, tier_spec: str, prompt: str, *, system: str | None = None
                     for sib in reg.tiers.values():
                         if sib.base_url == tier.base_url and sib.model.endswith(":free"):
                             health.set_cooldown(sib.id, daily, "OpenRouter free-model daily quota spent")
+                elif e.status == 402:  # account out of credits: every model on that key is dead, and not for 15 min
+                    for sib in _account_tiers(reg, tier):
+                        health.set_cooldown(sib, NO_CREDIT_COOLDOWN_S, f"account out of credits: {str(e)[:200]}")
                 else:
                     wait = e.retry_after_s if e.retry_after_s else TIER_COOLDOWN_S
                     health.set_cooldown(tid, int(wait), f"provider too hot: {str(e)[:200]}")
                 health.record_error(tid, str(e))
             elif e.down or (e.status or 0) >= 500 or e.status in (401, 403):
                 wait = AUTH_COOLDOWN_S if e.status in (401, 403) else int(e.retry_after_s or DOWN_COOLDOWN_S)
-                health.set_cooldown(tid, wait, f"provider down or login/key rejected: {str(e)[:200]}")
+                # a rejected key fails every tier that uses it; a down host is per tier (other models may answer)
+                for sib in (_account_tiers(reg, reg.tiers[tid]) if e.status in (401, 403) else [tid]):
+                    health.set_cooldown(sib, wait, f"provider down or login/key rejected: {str(e)[:200]}")
                 health.record_error(tid, str(e))
                 if e.down:
                     down.add(provider_key(reg.tiers[tid].base_url))
@@ -563,7 +585,8 @@ def vote(reg: Registry, tier_spec: str, prompt: str, *, system: str | None = Non
     answer, winners = max(groups.items(), key=lambda kv: (sum((trust_weights or {}).get(r.tier, 1.0) for r in kv[1]), len(kv[1])))
     best = winners[0]
     best.tier = ",".join(r.tier for r in winners)
-    best.data = {"answer": answer, "agree": len(winners), "of": len(got), "weighted_score": round(sum((trust_weights or {}).get(r.tier, 1.0) for r in winners), 4),
+    best.data = {"answer": answer, "agree": len(winners), "of": len(got),
+                 "weighted_score": round(sum((trust_weights or {}).get(r.tier, 1.0) for r in winners), 4),
                  "votes": {a: [r.tier for r in rs] for a, rs in groups.items()}}
     return best
 
@@ -654,7 +677,7 @@ def ask_stream(reg: Registry, tier_spec: str, prompt: str, *, system: str | None
         raise FleetError(f"tier {tier.id}: streaming needs a plain HTTP tier; use ask()")
     _check_cap(tier)
     messages = ([{"role": "system", "content": system}] if system else []) + [{"role": "user", "content": prompt}]
-    body = {"model": tier.model, "messages": messages, "temperature": 0.2, "stream": True}
+    body = {"model": tier.model, "messages": messages, "temperature": 0.2, "stream": True, **tier.extra}
     req = urllib.request.Request(f"{tier.base_url.rstrip('/')}/chat/completions", data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json",
                                           "Authorization": f"Bearer {_tier_key(tier)}"}, method="POST")

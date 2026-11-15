@@ -124,6 +124,7 @@ workers:
     - copilot
     - -p
     - "Read the task instructions in {prompt_file} and complete them in {cwd}. End with FLEET_RESULT JSON."
+    - --allow-all-tools  # headless -p denies every tool needing approval otherwise
     - --add-dir
     - "{cwd}"
   muse-code:
@@ -131,6 +132,7 @@ workers:
     control: command
     cost: flat
     rank: 60
+    enabled: true  # Muse Code CLI 1.4.20 installed 2026-11-14 (dev.meta.ai/install.ps1); headless = `muse exec`
     capabilities:
     - code
     - edit
@@ -145,10 +147,13 @@ workers:
     - --version
     argv:
     - muse
-    - -p
-    - "Read the task instructions in {prompt_file} and complete them in {cwd}. End with FLEET_RESULT JSON."
-    - --add-dir
+    - exec
+    - --disable-approval  # headless cannot answer prompts; sandbox stays on
+    - --max-model-steps
+    - "200"
+    - --workspace
     - "{cwd}"
+    - "Read the task instructions in {prompt_file} and complete them in {cwd}. End with FLEET_RESULT JSON."
   openhuman:
     kind: agent
     control: command
@@ -161,16 +166,26 @@ workers:
     - leader
     - comm
     timeout_s: 900
-    notes: OpenHuman Second in Command (unattended/scheduled rhythm). Registry entry added 2026-11-14 (Ultron review) so the openhuman neuron can actually execute.
+    notes: OpenHuman Second in Command (unattended/scheduled rhythm), reached through its durable card queue
+      (openhuman-ops oh_msg.py send; there is no openhuman CLI). Fixed 2026-11-14 - the old argv called a
+      binary that does not exist.
     probe:
-    - openhuman
-    - --version
+    - py
+    - "-3.14"
+    - C:\AI\projects\openhuman-ops\scripts\oh_msg.py
+    - list
+    - --n
+    - "1"
     argv:
-    - openhuman
-    - -p
+    - py
+    - "-3.14"
+    - C:\AI\projects\openhuman-ops\scripts\oh_msg.py
+    - send
     - "Read the task instructions in {prompt_file} and complete them in {cwd}. End with FLEET_RESULT JSON."
-    - --add-dir
-    - "{cwd}"
+    - --name
+    - ultron
+    - --channel
+    - none
 tiers:
   tiny:
     base_url: http://127.0.0.1:47831/v1
@@ -255,6 +270,7 @@ tiers:
   nim-ultra:
     base_url: https://integrate.api.nvidia.com/v1
     model: nvidia/nemotron-3-ultra-550b-a55b
+    extra: {chat_template_kwargs: {force_nonempty_content: true}}  # NIM model card: avoids empty content
     key_env: NVIDIA_API_KEY
     cost: free
     catalog: nvidia
@@ -417,7 +433,7 @@ tiers:
   # ahead of free/flat tiers.
   openai-api:
     base_url: https://api.openai.com/v1
-    model: gpt-5.5
+    model: gpt-6-astra  # OpenAI docs flagship 2026-11-14
     key_env: OPENAI_API_KEY
     cost: metered
     catalog: openai
@@ -481,7 +497,7 @@ tiers:
     fallback: [zen-deepseek, openrouter-ultra]
   xai-api:
     base_url: https://api.x.ai/v1
-    model: grok-4.5
+    model: grok-4.7  # xAI docs recommended 2026-11-14
     key_env: XAI_API_KEY
     cost: metered
     catalog: xai
@@ -493,11 +509,11 @@ tiers:
     key_env: PERPLEXITY_API_KEY
     cost: metered
     catalog: perplexity
-    notes: Perplexity direct (grounded search answers).
+    notes: "DEAD: Sonar chat completions retired 2026-09-27 (docs.perplexity.ai); needs Agent API /v1/agent adapter. Fails fast into fallback."
     fallback: [gemini-api, main]
   hf-api:
     base_url: https://router.huggingface.co/v1
-    model: moonshotai/Kimi-K2-Instruct
+    model: moonshotai/Kimi-K3.1-Pro
     key_env: HF_TOKEN
     cost: metered
     catalog: huggingface
@@ -513,7 +529,7 @@ tiers:
     fallback: [groq-api, utility]
   moonshot-api:
     base_url: https://api.moonshot.ai/v1
-    model: kimi-k2.6
+    model: kimi-k3.1-pro
     key_env: MOONSHOT_API_KEY
     cost: metered
     catalog: moonshotai
@@ -521,7 +537,8 @@ tiers:
     fallback: [hf-api, openrouter-ultra]
   minimax-api:
     base_url: https://api.minimax.io/v1
-    model: MiniMax-M2.7
+    model: MiniMax-M3
+    extra: {reasoning_split: true}  # MiniMax docs: thinking in reasoning_content, not content
     key_env: MINIMAX_API_KEY
     cost: metered
     catalog: minimax
@@ -557,7 +574,7 @@ tiers:
   bedrock-api:
     base_url: https://bedrock-runtime.us-east-1.amazonaws.com
     adapter: bedrock
-    model: openai.gpt-oss-120b
+    model: openai.gpt-oss-120b-1:0  # bedrock-runtime Converse id (bare id = mantle endpoint only)
     key_env: AWS_ACCESS_KEY_ID
     cost: metered
     catalog: amazon-bedrock

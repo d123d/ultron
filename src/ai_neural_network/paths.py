@@ -7,7 +7,7 @@ def project_root() -> Path:
     for parent in here.parents:
         if (parent / "config" / "neurons.yaml").is_file():
             return parent
-    return Path(r"C:\AI\projects\ai-neural-network")
+    return Path(r"C:\AI\projects\ultron")
 
 
 def config_dir() -> Path:

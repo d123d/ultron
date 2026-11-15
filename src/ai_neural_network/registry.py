@@ -46,6 +46,7 @@ class Tier:
     effort: str = ""  # reasoning effort passed to codex/claude CLI tiers (agy puts it in the model id)
     fallback: list[str] = field(default_factory=list)  # tiers tried in order when this one fails (named-tier asks only)
     adapter: str = ""  # "" = plain OpenAI-bearer; else providers.ADAPTERS (azure, bedrock, vertex, cloudflare)
+    extra: dict[str, Any] = field(default_factory=dict)  # vendor-documented body params merged into each HTTP request
 
 
 @dataclass(frozen=True)
@@ -105,6 +106,19 @@ def load(path: str | Path | None = None) -> Registry:
                     board=dict(data.get("board") or {}),
                     throttle={k: dict(v) for k, v in throttle.items()},
                     quota_patterns=list(defaults.get("quota_patterns") or []))
+
+
+_LOCAL_PROVIDERS = {":47831": "strata", ":8790": "model-gate", ":4097": "zen-bridge"}
+
+
+def provider_name(t: Tier) -> str:
+    """The provider slot a tier belongs to: its CLI login, else its catalog id, else a known local port, else host."""
+    if t.cli:
+        return t.cli
+    for port, name in _LOCAL_PROVIDERS.items():
+        if port in t.base_url:
+            return name
+    return t.catalog or t.adapter or t.base_url.split("//")[-1].split("/")[0]
 
 
 def load_registry(path: str | Path | None = None) -> dict[str, Worker]:

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ultron"
-version = "0.4.0"
+version = "0.5.0"
 description = "Ultron — brain-structured AI neural network: AI Fleet workers and model tiers as neurons, no central dispatcher."
 requires-python = ">=3.11"
 dependencies = [

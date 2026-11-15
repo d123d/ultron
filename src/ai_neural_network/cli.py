@@ -206,6 +206,31 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("providers", help="cloud provider access: key presence, adapter, cooldown per tier")
     s.add_argument("--json", action="store_true")
 
+    s = sub.add_parser("slots", help="provider slots: one per provider, with concurrency and its model list")
+    s.add_argument("--refresh", action="store_true", help="fetch every provider's live /models list first")
+    s.add_argument("--models", help="list every model of this provider")
+    s.add_argument("--json", action="store_true")
+
+    s = sub.add_parser("jobs", help="job slots: kinds of work and the models each one uses")
+    s.add_argument("--json", action="store_true")
+
+    s = sub.add_parser("job", help="do one piece of work in a job slot (best model for that kind, with fallthrough)")
+    s.add_argument("kind")
+    s.add_argument("prompt", nargs="?")
+    s.add_argument("--prompt-file")
+    s.add_argument("--cwd")
+    s.add_argument("--done-when", action="append")
+    s.add_argument("--system")
+    s.add_argument("--file", action="append", default=[])
+    s.add_argument("--image", action="append", default=[])
+    s.add_argument("--timeout", type=int)
+    s.add_argument("--allow-claude", action="store_true")
+    s.add_argument("--json", action="store_true")
+
+    s = sub.add_parser("daemon", help="background loop (started at Windows logon): drain the board, heartbeat")
+    s.add_argument("--interval", type=int, default=60)
+    s.add_argument("--once", action="store_true")
+
     s = sub.add_parser("bakeoff", help="score tiers on the fixed eval set; --apply feeds scores into synapses")
     s.add_argument("--tiers", required=True)
     s.add_argument("--only")
@@ -247,7 +272,11 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--worker")
     b.add_argument("--dep", action="append", default=[])
     b.add_argument("--priority", type=int, default=2)
+    b.add_argument("--hold", action="store_true", help="park the card until `board release ID`")
+    b.add_argument("--timeout", type=int)
     b.add_argument("--json", action="store_true")
+    b = bsub.add_parser("release", help="let a held (or 3x failed) card run")
+    b.add_argument("id")
     for name in ("ready", "list"):
         b = bsub.add_parser(name)
         b.add_argument("--status")
@@ -275,13 +304,13 @@ def main(argv: list[str] | None = None) -> int:
     lw.add_argument("report")
     lw.add_argument("--system")
     lw.add_argument("--channel", default="none")
-    lw.add_argument("--repo", default="d123d/ai-neural-network")
+    lw.add_argument("--repo", default="d123d/ultron")
     lw.add_argument("--issue", type=int)
     lw.add_argument("--json", action="store_true")
     lc = lsub.add_parser("comm", help="talk with Muse, GitHub, Telegram, OpenHuman, or Leader")
     lc.add_argument("--to", required=True, choices=["muse", "github", "telegram", "openhuman", "leader"])
     lc.add_argument("--message", default="")
-    lc.add_argument("--repo", default="d123d/ai-neural-network")
+    lc.add_argument("--repo", default="d123d/ultron")
     lc.add_argument("--issue", type=int)
     lc.add_argument("--title")
     lc.add_argument("--label", action="append", default=[])
@@ -568,6 +597,51 @@ def _dispatch(args) -> int:
         _out(rows, args.json, _table(rows, cols))
         return 0
 
+    if args.cmd == "slots":
+        from . import slots
+
+        if args.refresh:
+            print(json.dumps(slots.refresh_models(reg)), file=sys.stderr)
+        rows = slots.provider_slots(reg)
+        if args.models:
+            row = next((r for r in rows if r["provider"] == args.models), None)
+            if row is None:
+                raise FleetError(f"unknown provider {args.models!r}; known: {', '.join(r['provider'] for r in rows)}")
+            _out(row["models"], args.json, "\n".join(row["models"]))
+            return 0
+        table = [{**r, "tiers": ",".join(r["tiers"])[:70], "cooled": ",".join(r["cooled"])} for r in rows]
+        _out(rows, args.json, _table(table, ["provider", "via", "cost", "slots", "key_present", "n_models", "tiers", "cooled"]))
+        return 0
+
+    if args.cmd == "jobs":
+        from . import slots
+
+        jobs = slots.load_jobs()
+        rows = [{"job": k, "mode": j.get("mode", "ask"),
+                 "models": ",".join(j.get("tiers") or [j.get("worker") or f"workers:{j.get('capability')}"]),
+                 "note": j.get("note", "")[:70]} for k, j in jobs.items()]
+        bad = slots.check_jobs(reg)
+        _out({"jobs": jobs, "errors": bad}, args.json,
+             _table(rows, ["job", "mode", "models", "note"]) + "".join(f"\nCONFIG ERROR {b}" for b in bad))
+        return 1 if bad else 0
+
+    if args.cmd == "job":
+        from . import slots
+
+        prompt = Path(args.prompt_file).read_text(encoding="utf-8") if args.prompt_file else args.prompt
+        if not prompt:
+            raise FleetError("give a prompt or --prompt-file")
+        data = slots.run_job(reg, args.kind, prompt, cwd=args.cwd, done_when=args.done_when, system=args.system,
+                             files=args.file, images=args.image, timeout_s=args.timeout, allow_claude=args.allow_claude)
+        _out(data, args.json, f"[{data['job']} -> {data['by']}: {data['status']}]\n{data.get('text') or data.get('reason')}")
+        return 0 if data["status"] == "ok" else 1
+
+    if args.cmd == "daemon":
+        from . import slots
+
+        slots.daemon(args.interval, once=args.once)
+        return 0
+
     if args.cmd == "bakeoff":
         from .evals import apply_scores
 
@@ -630,8 +704,12 @@ def _dispatch(args) -> int:
             card = _card(args)
             if args.worker:
                 card.worker = args.worker
-            issue = board.add(card, deps=args.dep, priority=args.priority)
+            issue = board.add(card, deps=args.dep, priority=args.priority, hold=args.hold)
             _out({"id": issue}, args.json, issue)
+            return 0
+        if args.bcmd == "release":
+            board.release(args.id)
+            print(f"released {args.id}")
             return 0
         if args.bcmd in ("ready", "list"):
             rows = board.ready() if args.bcmd == "ready" else board.list(args.status)

@@ -79,7 +79,8 @@ def render_prompt(card: TaskCard, worker: Worker) -> str:
         "Never print secrets. Never kill processes you did not start. Never delete files permanently.",
         "Follow Ponytail ultra: the best code is never written. Question any part the need does not justify; smallest "
         "complete change, stdlib/existing patterns first, no unrequested abstractions, test for new logic. "
-        "If checks are listed, run them before finishing.",
+        "If checks are listed, run them before finishing. Never make a check pass by faking or shadowing its tool "
+        "(no local pytest.py and the like): if a check's tool is missing, say so and finish with status partial.",
         "Write prose in caveman ultra: terse, no filler, technical substance exact. Code, commands, paths and the "
         "FLEET_RESULT line stay normal.",
         "Finish with one line exactly like:",
