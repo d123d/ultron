@@ -17,14 +17,16 @@ def _git(cwd: Path, *args: str, check: bool = True) -> str:
     return p.stdout.strip()
 
 
-def _exclude(root: Path) -> None:
+def _exclude(root: Path, extra: list[str] | None = None) -> None:
     exclude = Path(_git(root, "rev-parse", "--git-path", "info/exclude"))
     if not exclude.is_absolute():
         exclude = root / exclude
     exclude.parent.mkdir(parents=True, exist_ok=True)
     text = exclude.read_text(encoding="utf-8") if exclude.exists() else ""
-    if ".fleet/" not in text.splitlines():
-        exclude.write_text(text + ("" if text.endswith("\n") or not text else "\n") + ".fleet/\n", encoding="utf-8")
+    lines = text.splitlines()
+    add = [e for e in [".fleet/", *(extra or [])] if e not in lines]
+    if add:
+        exclude.write_text(text + ("" if text.endswith("\n") or not text else "\n") + "\n".join(add) + "\n", encoding="utf-8")
 
 
 def create(cwd: str | Path, run_id: str) -> tuple[Path, Path, str]:
@@ -36,7 +38,12 @@ def create(cwd: str | Path, run_id: str) -> tuple[Path, Path, str]:
     path = root / ".fleet" / "worktrees" / run_id
     branch = f"fleet/{run_id}"
     _git(root, "worktree", "add", "-b", branch, str(path), "HEAD")
-    link_ignored(root, path)
+    linked = link_ignored(root, path)
+    if linked:
+        # A POSIX symlink to a dir does not match dir-only ignore patterns (a Windows
+        # junction does, being a real dir) — exclude linked names explicitly so
+        # commit_all can never commit a link into the branch.
+        _exclude(root, [e.rstrip("/") for e in linked])
     return root, path / rel, branch
 
 
@@ -53,9 +60,12 @@ def ignored_entries(root: Path) -> list[str]:
 def _link(src: Path, dst: Path) -> bool:
     try:
         if src.is_dir():
-            import _winapi  # Windows junction: no admin rights needed, unlike symlinks
+            try:
+                import _winapi  # Windows junction: no admin rights needed, unlike symlinks
 
-            _winapi.CreateJunction(str(src), str(dst))
+                _winapi.CreateJunction(str(src), str(dst))
+            except ImportError:
+                os.symlink(src, dst, target_is_directory=True)  # POSIX: symlink is the junction equivalent
         else:
             os.link(src, dst)
         return True
@@ -84,8 +94,11 @@ def unlink_ignored(path: Path) -> int:
     for entry in ignored_entries(path):
         p = path / entry.rstrip("/")
         try:
-            if p.is_junction():
-                os.rmdir(p)
+            if p.is_junction() or p.is_symlink():
+                try:
+                    os.rmdir(p)
+                except OSError:
+                    os.unlink(p)
                 n += 1
             elif p.is_file() and os.stat(p).st_nlink > 1:
                 os.unlink(p)
