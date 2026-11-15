@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess
+import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -15,6 +17,10 @@ def run_checks(commands: list[str], cwd: str | Path, timeout_s: int = 600) -> di
         return {"ran": False, "passed": None, "results": []}
     results = []
     for cmd in commands:
+        if not shutil.which("python"):
+            # Checks are authored with `python` (Windows fleet PCs have it); many Linux
+            # boxes only ship python3. Run them under this interpreter instead of failing.
+            cmd = re.sub(r"(^|[;&|]\s*)python(?=\s|$)", lambda m: f"{m.group(1)}{sys.executable}", cmd)
         try:
             p = subprocess.run(cmd, shell=True, cwd=str(cwd), capture_output=True, timeout=timeout_s)
             out = (p.stdout + p.stderr).decode("utf-8", errors="replace")
