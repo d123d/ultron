@@ -17,3 +17,15 @@ procedures layered over the regions, acquired without rewiring synapses.
 Levels (lite / full / ultra) are per-skill in `config/skills.yaml`,
 default full, matching how Dustin runs the fleet (ponytail ultra +
 caveman ultra was the ai-fleet prompt setting from 2026-11-13).
+
+## Cloud provider skills (added 2026-11-14, Ultron review)
+
+- **cloud-providers** sits over all regions. It is the network's map of
+  itself as a cloud client: every direct API tier, CLI route, and
+  catalog-only provider, with key and fallback rules (`docs/PROVIDERS.md`).
+- **openrouter-typescript-sdk** sits over association and memory. When a
+  stimulus becomes code that must call cloud models, this is how: one
+  OpenRouter key, 300+ models, `callModel`, tools, streaming.
+- **mmx-cli** sits over association and sensory. MiniMax media (image,
+  video, speech, transcription, search) fires through the `mmx` CLI;
+  the `minimax-api` tier is its text route.
