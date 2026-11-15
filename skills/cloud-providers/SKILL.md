@@ -59,16 +59,14 @@ claude / best / claude-leader (Anthropic via `claude`), codex / gpt / codex-lead
 github / github-leader (GitHub Copilot via `copilot`), muse-code (`muse`),
 openhuman (`openhuman`), opencode / pi (ACP agents).
 
-## Catalog-only (no OpenAI-compatible bearer endpoint — adapter needed)
+## Adapter tiers (v0.4.0, `providers.py` — no plain bearer endpoint)
 
-- **Azure OpenAI** — per-resource endpoint + `api-key` header + deployment names.
-- **AWS Bedrock** — SigV4 signing, per-region model ids.
-- **Google Vertex AI** — OAuth / service-account tokens.
-- **Cloudflare Workers AI** — account id embedded in the URL.
+- **azure-api** — Azure OpenAI: `api-key` header + deployment in URL. Needs AZURE_OPENAI_ENDPOINT.
+- **bedrock-api** — AWS Bedrock Converse, SigV4-signed (stdlib). Needs AWS_SECRET_ACCESS_KEY.
+- **vertex-api** — Vertex AI: express API key (native format) or OAuth/gcloud + VERTEX_PROJECT (OpenAI-compat).
+- **cloudflare-api** — Workers AI: `{account}` resolved from CLOUDFLARE_ACCOUNT_ID at call time.
 
-Until an adapter exists, their models are reachable through OpenRouter
-(`openrouter-typescript-sdk` skill covers the TypeScript side) and, for many,
-NVIDIA NIM. Do not fake a tier for them: a bearer call will only 401.
+Check who can actually fire with `brain providers` before routing a stimulus.
 
 ## Related skills in this repo
 
