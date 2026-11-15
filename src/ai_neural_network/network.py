@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -43,7 +44,22 @@ class Network:
         ndata = yaml.safe_load((d / "neurons.yaml").read_text(encoding="utf-8"))["neurons"]
         neurons = {name: Neuron(name=name, **cfg) for name, cfg in ndata.items()}
         sdata = yaml.safe_load((d / "synapses.yaml").read_text(encoding="utf-8"))["synapses"]
-        synapses = {(s["from"], s["to"]): float(s["weight"]) for s in sdata}
+        synapses: dict[tuple[str, str], float] = {}
+        for s in sdata:
+            edge = (s["from"], s["to"])
+            if edge in synapses:
+                # One directed pair holds one weight: a second entry silently
+                # overwrites the first. Warn so a contradictory pair (e.g.
+                # an excitatory edge plus a lateral-inhibition edge) is
+                # visible instead of dropping one side unnoticed.
+                warnings.warn(
+                    f"duplicate synapse {edge[0]}->{edge[1]}: weights "
+                    f"{synapses[edge]} and {float(s['weight'])}; keeping "
+                    f"{float(s['weight'])} (later entry wins)",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            synapses[edge] = float(s["weight"])
         weights_file = d / "weights.json"
         if weights_file.exists():
             learned = json.loads(weights_file.read_text(encoding="utf-8"))
