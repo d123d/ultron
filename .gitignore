@@ -5,3 +5,6 @@ __pycache__/
 *.egg-info/
 weights.local.json
 uv.lock
+.env
+*.env
+.secrets/

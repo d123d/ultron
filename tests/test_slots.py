@@ -47,3 +47,31 @@ def test_job_falls_through_to_next_model(monkeypatch):
     assert out["status"] == "ok" and out["by"] == second and len(out["skipped"]) == 1
     with pytest.raises(FleetError):
         slots.run_job(registry.load(), "nosuchjob", "hi")
+
+
+def test_every_harness_has_a_slot():
+    reg = registry.load()
+    rows = slots.harness_slots(reg)
+    assert [r["harness"] for r in rows] == list(reg.workers)
+    assert {"opencode", "codex", "agy", "pi", "claude", "github", "muse-code", "openhuman"} <= {r["harness"] for r in rows}
+
+
+def test_learning_never_writes_into_the_repo_config(env):
+    from ai_neural_network.network import Network
+    from ai_neural_network.paths import config_dir
+
+    net = Network.from_config()
+    assert net.learned_path().parent == env[1]  # state dir, not config/
+    before = (config_dir() / "weights.json").read_text(encoding="utf-8")
+    net.sleep()
+    assert (config_dir() / "weights.json").read_text(encoding="utf-8") == before and net.learned_path().exists()
+
+
+def test_redact_covers_the_secrets_file(tmp_path, monkeypatch):
+    from ai_neural_network import procs
+
+    (tmp_path / ".secrets").mkdir()
+    (tmp_path / ".secrets" / ".env").write_text("SOME_API_KEY=abcd1234efgh5678\nAWS_REGION=us-east-1-region\n", encoding="utf-8")
+    monkeypatch.setattr(procs.Path, "home", lambda: tmp_path)
+    assert procs.redact("error: key abcd1234efgh5678 rejected") == "error: key [REDACTED] rejected"
+    assert procs.redact("us-east-1-region") == "us-east-1-region"

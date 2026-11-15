@@ -132,7 +132,7 @@ workers:
     control: command
     cost: flat
     rank: 60
-    enabled: true  # Muse Code CLI 1.4.20 installed 2026-11-14 (dev.meta.ai/install.ps1); headless = `muse exec`
+    enabled: false  # Muse Code CLI 1.4.20 installed 2026-11-14, but not logged in (`muse usage`: not logged in). Run `muse login`, approve the device code, then set true.
     capabilities:
     - code
     - edit

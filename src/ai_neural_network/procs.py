@@ -28,6 +28,15 @@ class ProcResult:
 
 def _secret_values() -> list[str]:
     vals = {v for k, v in os.environ.items() if _SECRET_NAME.search(k) and v and len(v) >= 8}
+    try:  # the keys live in ~/.secrets/.env, usually not in the process env: without this nothing was redacted
+        for line in (Path.home() / ".secrets" / ".env").read_text(encoding="utf-8").splitlines():
+            name, _, value = line.partition("=")
+            value = value.strip().strip('"').strip("'")
+            # secret-named entries only: a region or endpoint value would blank ordinary text
+            if len(value) >= 8 and _SECRET_NAME.search(name) and not name.lstrip().startswith("#"):
+                vals.add(value)
+    except OSError:
+        pass
     return sorted(vals, key=len, reverse=True)
 
 

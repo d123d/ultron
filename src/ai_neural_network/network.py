@@ -11,6 +11,7 @@ import yaml
 from . import health, registry
 from .neuron import Neuron
 from .paths import config_dir as default_config_dir
+from .paths import state_dir
 
 
 @dataclass
@@ -61,18 +62,24 @@ class Network:
                     stacklevel=2,
                 )
             synapses[edge] = float(s["weight"])
-        weights_file = d / "weights.json"
-        if weights_file.exists():
-            learned = json.loads(weights_file.read_text(encoding="utf-8"))
-            for key, w in learned.items():
-                if "->" in key:
-                    a, b = key.split("->", 1)
-                    if (a, b) in synapses:
-                        synapses[(a, b)] = float(w)
-        return cls(neurons, synapses, config_dir=d)
+        net = cls(neurons, synapses, config_dir=d)
+        # shipped seed (config/weights.json, tracked), then what this machine learned (state dir, untracked)
+        for weights_file in dict.fromkeys([d / "weights.json", net.learned_path()]):
+            if weights_file.exists():
+                for key, w in json.loads(weights_file.read_text(encoding="utf-8")).items():
+                    a, _, b = key.partition("->")
+                    if (a, b) in net.synapses:
+                        net.synapses[(a, b)] = float(w)
+        return net
+
+    def learned_path(self) -> Path:
+        """Where learning is saved. The repo's own config dir never takes run-time writes (every run used to
+        dirty the tracked weights.json and test runs eroded it); a custom config dir keeps its own file."""
+        d = self.config_dir or default_config_dir()
+        return state_dir() / "weights.json" if d.resolve() == default_config_dir().resolve() else d / "weights.json"
 
     def save_weights(self, path: str | Path | None = None) -> Path:
-        target = Path(path) if path else ((self.config_dir or default_config_dir()) / "weights.json")
+        target = Path(path) if path else self.learned_path()
         data = {f"{a}->{b}": round(w, 4) for (a, b), w in sorted(self.synapses.items())}
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
@@ -362,7 +369,7 @@ class Network:
             elif done_when:
                 from .verify import run_checks
 
-                v = run_checks(Path(cwd or ".").resolve(), done_when)
+                v = run_checks(done_when, Path(cwd or ".").resolve())  # (commands, cwd): was passed swapped
                 success = bool(v.get("passed"))
                 result = {"kind": "cerebellum", "verify": v}
             if success and reviewer and reviewer in self.neurons and reviewer != chosen:

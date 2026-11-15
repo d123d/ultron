@@ -58,6 +58,21 @@ def provider_slots(reg: Registry) -> list[dict[str, Any]]:
     return list(slots.values())
 
 
+def harness_slots(reg: Registry) -> list[dict[str, Any]]:
+    """One row per local harness (agent worker): how it is driven, its parallel slots, and whether it can run now."""
+    import shutil
+
+    rows = []
+    for w in reg.workers.values():
+        until = health.cooldown_until(w.id)
+        installed = bool(shutil.which(w.probe[0])) if w.probe else True
+        state = ("disabled" if not w.enabled else "not installed" if not installed else
+                 f"cooldown until {health.iso(until)}" if until else "opt-in" if w.opt_in else "ready")
+        rows.append({"harness": w.id, "via": w.control, "cost": w.cost, "slots": w.max_parallel, "state": state,
+                     "jobs": ",".join(w.capabilities)})
+    return rows
+
+
 def refresh_models(reg: Registry, timeout_s: float = 20) -> dict[str, Any]:
     """Fetch each HTTP provider's /models list and save it to config/provider_models.json."""
     out, seen = _live_models(), set()

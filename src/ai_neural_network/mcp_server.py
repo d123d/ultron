@@ -312,7 +312,8 @@ async def brain_slots() -> str:
     """Provider slots (one per provider: concurrency, key state, model list) and the job slots."""
     from . import slots
 
-    return _j({"providers": slots.provider_slots(registry.load()), "jobs": slots.load_jobs()})
+    reg = registry.load()
+    return _j({"providers": slots.provider_slots(reg), "harnesses": slots.harness_slots(reg), "jobs": slots.load_jobs()})
 
 
 def main() -> None:

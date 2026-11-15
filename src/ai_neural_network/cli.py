@@ -338,7 +338,7 @@ def _dispatch(args) -> int:
             by_region.setdefault(n.region, []).append(n.name)
         elect = leader.elect_leader(reg)
         inhib = sum(1 for w in net.synapses.values() if w < 0)
-        weights_file = (net.config_dir / "weights.json") if net.config_dir else None
+        weights_file = net.learned_path()
         data = {
             "regions": by_region,
             "neurons": len(net.neurons),
@@ -610,7 +610,10 @@ def _dispatch(args) -> int:
             _out(row["models"], args.json, "\n".join(row["models"]))
             return 0
         table = [{**r, "tiers": ",".join(r["tiers"])[:70], "cooled": ",".join(r["cooled"])} for r in rows]
-        _out(rows, args.json, _table(table, ["provider", "via", "cost", "slots", "key_present", "n_models", "tiers", "cooled"]))
+        harness = slots.harness_slots(reg)
+        _out({"providers": rows, "harnesses": harness}, args.json,
+             _table(table, ["provider", "via", "cost", "slots", "key_present", "n_models", "tiers", "cooled"])
+             + "\n\n" + _table(harness, ["harness", "via", "cost", "slots", "state", "jobs"]))
         return 0
 
     if args.cmd == "jobs":
@@ -683,11 +686,7 @@ def _dispatch(args) -> int:
 
     if args.cmd == "weights":
         if args.action == "export":
-            src = Path(args.config) / "weights.json" if args.config else None
-            from .paths import config_dir as _cd
-
-            src = src or (_cd() / "weights.json")
-            Path(args.path).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+            net.save_weights(args.path)  # the live weights: shipped seed + what this machine learned
             _out({"exported": args.path}, args.json, f"weights exported to {args.path}")
             return 0
         other = json.loads(Path(args.path).read_text(encoding="utf-8"))

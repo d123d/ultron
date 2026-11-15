@@ -66,7 +66,7 @@ def acpx_entry() -> str:
         entry = root / "acpx" / "dist" / "cli.js"
         if entry.is_file():
             return str(entry)
-    raise FleetError("acpx not installed (npm install -g acpx@0.19.4)")
+    raise FleetError("acpx not installed (npm install -g acpx)")
 
 
 class Adapter:

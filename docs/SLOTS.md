@@ -68,3 +68,15 @@ or reopens it. Heartbeat: `<state>/daemon.json`. One sleep consolidation a day.
 - OpenCode worker crashed at start: acpx ran a broken npx-cached `opencode-ai`. Fix is machine config, `~/.acpx/config.json` with `agents.opencode.argv` = the installed `opencode.exe acp`.
 - Daemon heartbeat now says `working` while a card runs; worker prompts point at `ultron.cmd job vision` for render QC.
 - First world-project card through the board: agy ran out of credits after 7 min, OpenCode crashed, Pi finished it in 440 s (failover worked without an operator).
+
+## Hand review, 2026-11-14 (public release)
+
+- Repo is public. No API key is in it or its history (gitleaks over all commits; CI now runs gitleaks on every push). Keys stay in `~/.secrets/.env`.
+- `redact()` only knew secrets in the process environment, but the keys live in `~/.secrets/.env`, so run logs, prompts and ledger errors were not redacted. Now both.
+- Learned weights were saved into the tracked `config/weights.json`: every run dirtied the repo and test runs eroded shipped weights. Learning now saves to `<state>/weights.json`; `config/weights.json` is the shipped seed. `brain weights export` writes the live weights.
+- `Network.fire` called `run_checks` with its arguments swapped (the check-only path could never pass).
+- The handoff schema rejected the statuses the worker prompt asks for (`done`, `partial`); fixed, and a dead no-jsonschema fallback removed.
+- `brain slots` lists local harnesses as slots too (driver, parallel slots, ready / cooldown / not installed).
+- Muse worker is disabled until `muse login` is approved (CLI 1.4.20 installed, not logged in).
+- Not hand-reviewed yet: `evals.py` task data, `gitinfo.py`, `worktree.py`, `throttle.py` lock internals.
+- Known limits: `health.json` updates are thread-safe but not cross-process safe (daemon + CLI can lose an update); `ledger.read()` reads the whole file on every capped call.
