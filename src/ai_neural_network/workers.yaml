@@ -543,6 +543,59 @@ tiers:
     catalog: deepinfra
     notes: DeepInfra direct (open-model cloud).
     fallback: [together-api, openrouter-ultra]
+  # Adapter tiers (2026-11-14, Ultron v0.4.0): providers with no plain OpenAI-bearer
+  # endpoint, reached through src/ai_neural_network/providers.py. See docs/PROVIDERS.md.
+  azure-api:
+    base_url: azure://openai
+    adapter: azure
+    model: gpt-5.5
+    key_env: AZURE_OPENAI_API_KEY
+    cost: metered
+    catalog: azure
+    notes: Azure OpenAI via adapter (api-key header, deployment in URL). Needs AZURE_OPENAI_ENDPOINT in ~/.secrets/.env; model = your deployment name.
+    fallback: [openai-api, openrouter-ultra]
+  bedrock-api:
+    base_url: https://bedrock-runtime.us-east-1.amazonaws.com
+    adapter: bedrock
+    model: openai.gpt-oss-120b
+    key_env: AWS_ACCESS_KEY_ID
+    cost: metered
+    catalog: amazon-bedrock
+    notes: AWS Bedrock Converse via adapter (SigV4, stdlib). Needs AWS_SECRET_ACCESS_KEY; AWS_REGION optional (default us-east-1).
+    fallback: [openrouter-ultra, nim-ultra]
+  vertex-api:
+    base_url: https://aiplatform.googleapis.com/v1beta1
+    adapter: vertex
+    model: gemini-3.5-flash
+    key_env: VERTEX_API_KEY
+    cost: metered
+    catalog: google-vertex
+    notes: Google Vertex AI via adapter. Express mode with VERTEX_API_KEY, or OAuth (GOOGLE_ACCESS_TOKEN / gcloud) + VERTEX_PROJECT for the OpenAI-compat endpoint.
+    fallback: [gemini-api, openrouter-ultra]
+  cloudflare-api:
+    base_url: https://api.cloudflare.com/client/v4/accounts/{account}/ai/v1
+    adapter: cloudflare
+    model: "@cf/openai/gpt-oss-120b"
+    key_env: CLOUDFLARE_API_TOKEN
+    cost: metered
+    catalog: cloudflare-workers-ai
+    notes: Cloudflare Workers AI via adapter ({account} resolved from CLOUDFLARE_ACCOUNT_ID at call time).
+    fallback: [groq-api, openrouter-ultra]
+  openai-embed:
+    base_url: https://api.openai.com/v1
+    model: text-embedding-3-small
+    key_env: OPENAI_API_KEY
+    cost: metered
+    catalog: openai
+    notes: Embedding tier for semantic memory (brain remember/recall), not chat. Shares the OpenAI key.
+    fallback: [gemini-embed]
+  gemini-embed:
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai
+    model: gemini-embedding-2
+    key_env: GEMINI_API_KEY
+    cost: metered
+    catalog: google
+    notes: Embedding tier (fallback for openai-embed) via Google AI Studio OpenAI-compat /embeddings.
 routing:
   cost_order:
   - free
