@@ -396,3 +396,47 @@ neurons:
     refractory_ticks: 1
     receptive_field: [text, reasoning, code]
     notes: "DeepInfra direct (DEEPINFRA_API_KEY)."
+
+  # Adapter + embedding neurons (added 2026-11-14, Ultron v0.4.0)
+  azure-api:
+    region: association
+    kind: tier
+    threshold: 0.52
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, code]
+    notes: "Azure OpenAI via adapter (AZURE_OPENAI_API_KEY + AZURE_OPENAI_ENDPOINT)."
+  bedrock-api:
+    region: association
+    kind: tier
+    threshold: 0.52
+    refractory_ticks: 1
+    receptive_field: [text, reasoning]
+    notes: "AWS Bedrock Converse via SigV4 adapter (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY)."
+  vertex-api:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, research, reasoning, vision]
+    notes: "Google Vertex AI via adapter (VERTEX_API_KEY express, or OAuth + VERTEX_PROJECT)."
+  cloudflare-api:
+    region: association
+    kind: tier
+    threshold: 0.48
+    refractory_ticks: 1
+    receptive_field: [text, reasoning]
+    notes: "Cloudflare Workers AI via adapter (CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID)."
+  openai-embed:
+    region: memory
+    kind: tier
+    threshold: 0.40
+    refractory_ticks: 1
+    receptive_field: [embed, recall, text]
+    notes: "Embedding neuron for semantic memory (brain remember/recall). Not chat."
+  gemini-embed:
+    region: memory
+    kind: tier
+    threshold: 0.40
+    refractory_ticks: 1
+    receptive_field: [embed, recall]
+    notes: "Embedding fallback neuron (Gemini embeddings). Not chat."
