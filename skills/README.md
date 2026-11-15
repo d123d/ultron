@@ -9,6 +9,9 @@ the open agent-skills directory. Each folder holds the unmodified upstream
 | ponytail | DietrichGebert/ponytail (MIT) | prefrontal + motor: write the minimum code |
 | caveman | JuliusBrussee/caveman (Apache-2.0) | all output: say it in the fewest tokens |
 | find-skills | vercel-labs/skills | sensory + memory: acquire new skills |
+| openrouter-typescript-sdk | OpenRouterTeam/skills | association + memory: 300+ cloud models via one OpenRouter key (TypeScript) |
+| mmx-cli | MiniMax-AI/cli | association + sensory: MiniMax text/image/video/speech/search via CLI |
+| cloud-providers | Ultron-native | all: provider access map — tiers, keys, fallbacks (docs/PROVIDERS.md) |
 
 Install rule (applies to the network's operators too): read a skill's
 SKILL.md before installing it; never run a third-party install script,
