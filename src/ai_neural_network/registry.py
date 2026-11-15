@@ -45,6 +45,7 @@ class Tier:
     daily_cap: int = 0  # most calls per UTC day (0 = no cap); for subscription tiers shared with people's own use
     effort: str = ""  # reasoning effort passed to codex/claude CLI tiers (agy puts it in the model id)
     fallback: list[str] = field(default_factory=list)  # tiers tried in order when this one fails (named-tier asks only)
+    adapter: str = ""  # "" = plain OpenAI-bearer; else providers.ADAPTERS (azure, bedrock, vertex, cloudflare)
 
 
 @dataclass(frozen=True)
