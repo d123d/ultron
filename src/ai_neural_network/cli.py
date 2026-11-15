@@ -240,13 +240,13 @@ def main(argv: list[str] | None = None) -> int:
     lw.add_argument("report")
     lw.add_argument("--system")
     lw.add_argument("--channel", default="none")
-    lw.add_argument("--repo", default="d123d/agent-comms")
+    lw.add_argument("--repo", default="d123d/ai-neural-network")
     lw.add_argument("--issue", type=int)
     lw.add_argument("--json", action="store_true")
     lc = lsub.add_parser("comm", help="talk with Muse, GitHub, Telegram, OpenHuman, or Leader")
     lc.add_argument("--to", required=True, choices=["muse", "github", "telegram", "openhuman", "leader"])
     lc.add_argument("--message", default="")
-    lc.add_argument("--repo", default="d123d/agent-comms")
+    lc.add_argument("--repo", default="d123d/ai-neural-network")
     lc.add_argument("--issue", type=int)
     lc.add_argument("--title")
     lc.add_argument("--label", action="append", default=[])
@@ -369,21 +369,15 @@ def _dispatch(args) -> int:
 
     if args.cmd == "sleep":
         result = net.sleep(decay=args.decay, prune_below=args.prune_below)
-        msg = (
-            f"sleep: decayed all weights by {args.decay}; "
-            f"pruned {len(result['pruned'])} synapses; weights -> {result['weights_saved']}"
-        )
+        msg = (f"sleep: decayed all weights by {args.decay}; pruned {len(result['pruned'])} synapses; "
+               f"weights -> {result['weights_saved']}")
         _out(result, args.json, msg)
         return 0
 
     if args.cmd == "sync":
         missing = net.sync_missing()
         data = {"missing_neurons": missing}
-        msg = (
-            "all registry workers/tiers have neurons"
-            if not missing
-            else "no neuron yet for: " + ", ".join(missing)
-        )
+        msg = "all registry workers/tiers have neurons" if not missing else "no neuron yet for: " + ", ".join(missing)
         _out(data, args.json, msg)
         return 0
 
