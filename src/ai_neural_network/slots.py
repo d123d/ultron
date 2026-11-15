@@ -163,6 +163,35 @@ def run_job(reg: Registry, kind: str, prompt: str, *, cwd: str | None = None, do
     raise FleetError(f"job {kind}: every model failed: " + " | ".join(errors))
 
 
+def _pid_alive(pid: int) -> bool:
+    import subprocess
+    import sys
+
+    if sys.platform == "win32":  # os.kill(pid, 0) terminates the process on Windows
+        out = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True, text=True).stdout
+        return str(pid) in out
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def reclaim_stale(board) -> list[str]:
+    """Reopen cards a dead worker loop on this machine still holds (reboot or restart mid-run left them stuck)."""
+    import re
+    import socket
+
+    mine = re.compile(rf"fleet-{re.escape(socket.gethostname())}-(\d+)$")
+    freed = []
+    for issue in board.list("in_progress"):
+        m = mine.match(issue.get("assignee") or "")
+        if m and not _pid_alive(int(m.group(1))):
+            board.reopen(issue["id"], "ultron-daemon", "worker loop died mid-run; reopened")
+            freed.append(issue["id"])
+    return freed
+
+
 def daemon(interval_s: int = 60, once: bool = False) -> None:
     """Background loop started at Windows logon: drain the task board, keep a heartbeat, consolidate daily."""
     from .board import Board
@@ -186,7 +215,9 @@ def daemon(interval_s: int = 60, once: bool = False) -> None:
         try:
             reg = registry.load()  # reload: config edits apply without a restart
             beat("", "working")  # a card can run an hour: without this the heartbeat looked dead meanwhile
-            processed += len(work(reg, Board(reg), max_tasks=1))
+            board = Board(reg)
+            reclaim_stale(board)
+            processed += len(work(reg, board, max_tasks=1))
             today = datetime.now().date().isoformat()
             if last_sleep != today:
                 Network.from_config().sleep()

@@ -87,3 +87,24 @@ def test_worker_prompt_lists_matching_skills(tmp_path, monkeypatch):
     assert str(tmp_path / "blender" / "SKILL.md") in prompt  # installed + topic matches
     assert "world-builder" not in prompt  # topic matches but not installed here: skipped
     assert "SKILLS" not in render_prompt(TaskCard(goal="say hello"), None)
+
+
+def test_reclaim_reopens_cards_of_dead_worker_loops(monkeypatch):
+    import os
+    import socket
+
+    host = socket.gethostname()
+    issues = [{"id": "a", "assignee": f"fleet-{host}-999999999"},      # dead pid: stuck card
+              {"id": "b", "assignee": f"fleet-{host}-{os.getpid()}"},   # live loop: leave it
+              {"id": "c", "assignee": "fleet-otherbox-1"}]              # another machine: not ours to judge
+
+    class FakeBoard:
+        reopened: list = []
+
+        def list(self, status):
+            return issues
+
+        def reopen(self, issue_id, actor, note):
+            self.reopened.append(issue_id)
+
+    assert slots.reclaim_stale(FakeBoard()) == ["a"]
