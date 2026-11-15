@@ -192,7 +192,8 @@ class Network:
                 w = w + 0.01 if success else w - 0.01
                 self.synapses[edge] = max(-1.0, min(-0.05, w))
 
-    def sleep(self, decay: float = 0.01, prune_below: float = 0.05) -> dict[str, Any]:
+    def sleep(self, decay: float = 0.01, prune_below: float = 0.05,
+              save_path: str | Path | None = None) -> dict[str, Any]:
         """Sleep consolidation: decay every excitatory weight, prune the
         ones that faded below prune_below to 0, persist weights.json."""
         pruned: list[str] = []
@@ -204,7 +205,7 @@ class Network:
                 pruned.append(f"{edge[0]}->{edge[1]}")
                 w = 0.0
             self.synapses[edge] = w
-        path = self.save_weights()
+        path = self.save_weights(save_path)
         return {"pruned": pruned, "weights_saved": str(path)}
 
     def merge_weights(self, other: dict[str, float]) -> dict[str, Any]:
