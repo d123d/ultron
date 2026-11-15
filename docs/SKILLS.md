@@ -15,8 +15,8 @@ procedures layered over the regions, acquired without rewiring synapses.
   new capability, no new neuron required.
 
 Levels (lite / full / ultra) are per-skill in `config/skills.yaml`,
-default full, matching how Dustin runs the fleet (ponytail ultra +
-caveman ultra was the ai-fleet prompt setting from 2026-11-13).
+default full, matching how the home machine runs it (ponytail ultra +
+caveman ultra is the worker prompt setting).
 
 ## Cloud provider skills (added 2026-11-14, Ultron review)
 
@@ -29,3 +29,23 @@ caveman ultra was the ai-fleet prompt setting from 2026-11-13).
 - **mmx-cli** sits over association and sensory. MiniMax media (image,
   video, speech, transcription, search) fires through the `mmx` CLI;
   the `minimax-api` tier is its text route.
+
+## The skill library (added 2026-11-14)
+
+Ultron vendors only the six skills above. Everything else comes from the machine's own skill
+library (on the home box: 450 skills, installed and updated with skills.sh). `config/skills.yaml`
+has:
+
+- `library`: the folder of installed skills (`ULTRON_SKILLS_DIR` overrides it).
+- `always`: files every skilled prompt gets, such as the machine's tool registry.
+- `topics`: keyword lists mapped to skill names: world-3d, animation, cinema, fiction, audio,
+  image, documents, code, ai-systems.
+
+When a card's goal matches a topic, the worker prompt ends with a `SKILLS` list of those
+`SKILL.md` paths (ten at most) and the worker reads the ones that fit. A skill that is not
+installed is skipped, so the same config works on a bare machine.
+
+To add a capability: `npx skills add <owner/repo>`, read the `SKILL.md`, then add its name to a
+topic. Installed this way on 2026-11-14: `humanizer` (blader/humanizer, MIT) for prose, and the
+MiniMax set (minimax-ai/skills): music generation, playlists, the multimodal toolkit (speech,
+image, video, transcription), docx, pdf, xlsx, pptx, vision analysis.

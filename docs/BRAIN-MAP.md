@@ -1,6 +1,6 @@
 # Brain Map — AI Fleet, translated
 
-| AI Fleet piece | Neural Fleet piece | Region / role |
+| AI Fleet piece | Ultron piece | Region / role |
 |---|---|---|
 | opencode worker | neuron `opencode` | motor |
 | pi worker | neuron `pi` | motor |

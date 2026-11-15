@@ -3,7 +3,7 @@
 ## The one change that matters
 
 AI Fleet: `stimulus -> router -> ONE worker -> check -> receipt`.
-Neural Fleet: `stimulus -> spread -> POPULATION -> check -> weight update`.
+Ultron: `stimulus -> spread -> POPULATION -> check -> weight update`.
 
 Everything else (workers, CLIs, keys, done-when checks) is reused. The
 dispatcher was the only part replaced — because a brain has no dispatcher.

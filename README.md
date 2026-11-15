@@ -1,97 +1,106 @@
 # Ultron
 
-**The AI neural network. One brain, every agent and model Dustin has.**
+One command line and one MCP server in front of every AI you can reach: cloud model APIs,
+subscription CLIs, local models and coding-agent harnesses. You hand Ultron a job; it picks the
+best available model or agent for that kind of job, falls through when one is down or out of
+quota, checks the result, and learns from the outcome.
 
-Ultron is what AI Fleet became when the dispatcher was deleted. It is the
-merge (2026-11-14) of Gemini's `ai-neural-network` (live firing, fleet
-registry, leader election) and Muse's `neural-fleet` (propagation core,
-docs, skill layer), plus the 20 improvements held for this merge.
-`ai-neural-network` is the surviving repo; `neural-fleet` is archived
-and points here.
+Ultron grew out of AI Fleet (a task-card dispatcher) and two brain-structured rewrites of it
+(`ai-neural-network` and `neural-fleet`, merged 2026-11-14). The Python package is still named
+`ai_neural_network`; the commands are `ultron` and `brain` (same program).
 
-There is no router. A task is a **stimulus**: it enters at sensory neurons,
-spreads through weighted excitatory and inhibitory synapses, recruits a
-**firing population** across cortical regions, the population does the
-work, cerebellum checks verify it, and the outcome rewires the synapses.
-
-| AI Fleet | Ultron | Brain |
-|---|---|---|
-| worker / model tier | neuron (`config/neurons.yaml`, 61) | neuron |
-| router picks one worker | propagation; population decides | no central controller |
-| task card | stimulus / signal | sensory input |
-| capability list | receptive field | receptive field |
-| rank | synaptic weights (learned) | synapse strength |
-| cooldown / quota | refractory period + brainstem | refractory period |
-| done-when checks | cerebellum -> learning signal | cerebellum |
-| ledger | hippocampus: episodes | memory |
-| doctor / health | brainstem homeostasis | brainstem |
-| leader election | prefrontal leader neurons | executive control |
-
-## Regions
-
-- **sensory**: strata, vision, nim-vl, openrouter-gemma — local/private and visual input
-- **memory**: utility, ollama-cloud, nim-lightning, openhuman — recall, fast tiers, unattended rhythm
-- **association**: agy, main, gemini, gemini-api, gpt, meta, the NIM and Zen families, go/go-pro, muse — research and synthesis
-- **prefrontal**: claude, codex, leaders (claude/codex/github), gemini-argon, agy-opus, muse-code, best — planning, review, executive
-- **motor**: opencode, pi, github — code, edit, shell
-
-Every worker and tier in the fleet registry has a neuron. `brain sync`
-reports any registry entry that lacks one (neurogenesis check).
-
-## Use
+## Quick start
 
 ```bash
-brain status
-brain excite "fix the parser" --capability code --trace
-brain excite "review the plan" --capability review --stakes high   # thalamic gating: prefrontal only
-brain fire "summarise notes" --capability text                     # propagate + invoke + verify + learn
-brain sleep                                                        # consolidation: decay + prune + save weights
-brain sync                                                         # registry entries with no neuron
-brain leader elect
+git clone https://github.com/d123d/ultron.git
+cd ultron && uv venv && uv pip install -e ".[dev]"
+uv run ultron slots        # what you can reach: providers, models, harnesses
+uv run ultron jobs         # kinds of work and the models each one uses
+uv run ultron job quick "Say hello"
 ```
 
-MCP server: `brain-mcp` (also `ultron-mcp`). CLI also installs as `ultron`.
+Keys are read from `~/.secrets/.env` (or the environment) by the names in
+`src/ai_neural_network/workers.yaml`. **No key belongs in this repo**: CI runs gitleaks over the
+full history on every push, and run logs are redacted. A provider with no key simply stays
+unavailable and its fallbacks answer.
 
-v0.4.0 adds: `brain providers` (who can fire today), `brain bakeoff --apply`
-(eval scores -> synapses), `brain remember`/`recall` (embedding memory),
-`brain spend` + cost-scaled learning, `brain ask --stream`,
-`brain sync --add` (neurogenesis scaffolding), `brain weights merge|export`
-(weights sync), and a code-enforced privacy gate on `brain fire --private`.
+## The three ideas
 
-v0.5.0 adds provider slots (`brain slots`, one per provider with its model list), job slots
-(`brain job <kind>`, best model per kind of work, `config/jobs.yaml`), any-model asks
-(`--tier provider:model`), a board daemon that launches with Windows (`brain daemon`), and working
-OpenHuman / Copilot / Muse integration. See `docs/SLOTS.md`.
+**Provider slots.** One slot per provider: endpoint or CLI login, concurrency, key state, and
+every model it serves (`ultron slots --refresh` pulls the live `/models` lists). Any listed model
+can be called without configuring it: `ultron ask "..." --tier "nvidia:<model id>,"`.
+Local harnesses (Codex, OpenCode, Pi, Antigravity, Copilot, Claude Code, Muse, OpenHuman) have
+slots too.
 
-## Learning
+**Job slots.** `config/jobs.yaml` maps a kind of work to an ordered list of models or to an agent
+harness. `ultron job <kind> "<prompt>"`:
 
-Hebbian, with the merge's upgrades: **STDP-lite** (causal firing order
-earns full update, reversed earns half), **neuromodulation** (a global
-reward scalar scales the update), **learned inhibition** (inhibitory
-edges relax on success, tighten on failure), and **sleep consolidation**
-(unused weights decay; faded synapses prune to zero). Working memory:
-`excite --carry` starts warm from the previous population.
+| Kind | What runs |
+|---|---|
+| `quick`, `bulk`, `extract`, `draft` | fast free text models |
+| `reason`, `plan`, `research` | strongest free reasoning and long-context models |
+| `verify` | three providers answer, majority wins |
+| `vision` | image QC (`--image`) |
+| `private` | local model only; nothing leaves the machine |
+| `leader`, `best` | subscription models |
+| `code`, `review`, `investigate`, `local-code` | an agent harness works in `--cwd`, checked by `--done-when` |
+| `unattended` | handed to OpenHuman's card queue |
 
-## Cloud providers
+**Board and daemon.** `ultron board add --text "<goal>" --cwd <repo> --done-when "<check>"` queues
+agent work; `--dep` chains cards so they run one at a time; `--hold` parks one. `ultron daemon`
+(a logon task on Windows) takes one ready card a minute, runs it on the first free harness, fails
+over to the next harness on quota or crash, verifies with the card's checks and closes or reopens
+it. Cards left in progress by a dead daemon are reopened on restart.
 
-Every major cloud provider has a direct tier + neuron (OpenAI, Anthropic,
-Google, Mistral, Cohere, Groq, Cerebras, Together, Fireworks, DeepInfra,
-SambaNova, DeepSeek, xAI, Perplexity, Moonshot, MiniMax, Hugging Face,
-NVIDIA NIM, Ollama Cloud, OpenRouter, OpenCode Go), plus subscription/CLI
-routes (Claude, Codex, Antigravity, Copilot, Muse). Azure, Bedrock, Vertex
-and Cloudflare speak non-bearer APIs and run through the adapter layer
-(`providers.py`: SigV4, api-key header, OAuth/express, account-id URL). Full matrix, keys and
-fallbacks: `docs/PROVIDERS.md`. A tier fires only when its `key_env` is in
-`~/.secrets/.env`; otherwise its fallback chain takes over.
+Details and the list of defects found in live use: [docs/SLOTS.md](docs/SLOTS.md).
 
-## Skill layer
+## Under the hood: the network
 
-ponytail (minimum code), caveman (minimum tokens), find-skills
-(skills.sh acquisition), plus the cloud provider skills —
-openrouter-typescript-sdk, mmx-cli, cloud-providers — see
-`docs/SKILLS.md` and `config/skills.yaml`.
+Workers and model tiers are neurons in five regions (sensory, memory, association, prefrontal,
+motor) joined by weighted excitatory and inhibitory synapses. A task is a stimulus: it spreads,
+recruits a firing population, the population does the work, checks verify it, and the outcome
+rewires the weights (Hebbian learning with STDP-lite, neuromodulation by cost, learned inhibition,
+sleep consolidation). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and
+[docs/BRAIN-MAP.md](docs/BRAIN-MAP.md).
 
-## Access for other agents
+```bash
+ultron status
+ultron excite "fix the parser" --capability code --trace   # who would fire
+ultron fire "summarise notes" --capability text            # propagate, run, verify, learn
+ultron leader elect                                        # which executive model is available
+ultron doctor                                              # health and quota of every worker and tier
+```
 
-See [ACCESS.md](ACCESS.md): repo link, clone, MCP config, and the
-stimulus contract. One link is all an agent needs.
+Shipped seed weights are `config/weights.json`; what a machine learns is saved in its state
+directory, never in the repo.
+
+## Skills and tools
+
+Worker prompts carry the working rules (smallest complete change, terse output, never fake a
+check) and, per task topic, the paths of matching skills from the machine's skill library plus its
+tool registry: 3D worlds and assets, animation, cinema, fiction, audio, images, documents, code.
+Topics are in `config/skills.yaml`; install skills with [skills.sh](https://skills.sh). A few
+skills ship in `skills/`. See [docs/SKILLS.md](docs/SKILLS.md).
+
+## Providers
+
+Direct tiers for OpenRouter, NVIDIA NIM, Ollama Cloud, Google, OpenAI, Anthropic, Mistral, Cohere,
+Groq, Cerebras, Together, Fireworks, DeepInfra, SambaNova, DeepSeek, xAI, Perplexity, Moonshot,
+MiniMax, Hugging Face, OpenCode Go; adapters for Azure, Bedrock, Vertex and Cloudflare;
+subscription routes through the `claude`, `codex`, `agy`, `copilot` and `muse` CLIs; local models
+through any OpenAI-compatible server. Matrix: [docs/PROVIDERS.md](docs/PROVIDERS.md); vendor
+quirks: [docs/PROVIDER-BEST-PRACTICES.md](docs/PROVIDER-BEST-PRACTICES.md).
+
+## For other agents
+
+[ACCESS.md](ACCESS.md): clone, MCP config and the worker contract. MCP tools include `brain_job`,
+`brain_slots`, `brain_ask`, `brain_run`, `brain_fire`, `brain_doctor`, `brain_leader`.
+
+## Honest limits
+
+- Built and tested on one Windows 11 workstation; CI runs the tests on Linux. Paths in
+  `workers.yaml`, `config/skills.yaml` and the board settings point at that machine: edit them.
+- Job-slot model order is hand-set from live measurements, not learned yet.
+- Health state is safe across threads, not across processes.
+
+MIT licence.

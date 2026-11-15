@@ -132,7 +132,7 @@ workers:
     control: command
     cost: flat
     rank: 60
-    enabled: false  # Muse Code CLI 1.4.20 installed 2026-11-14, but not logged in (`muse usage`: not logged in). Run `muse login`, approve the device code, then set true.
+    enabled: false  # Muse Code CLI 1.4.20, logged in 2026-11-14, but `muse exec` answers 402 billing_error (no subscription allowance). Set true once billing works.
     capabilities:
     - code
     - edit
