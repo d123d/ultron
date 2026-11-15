@@ -1,5 +1,8 @@
+import shutil
 import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from ai_neural_network import Network
@@ -61,3 +64,15 @@ def test_weights_roundtrip(tmp_path):
     out = tmp_path / "weights.json"
     n.save_weights(out)
     assert out.exists() and "->" in out.read_text()
+
+def test_duplicate_synapse_edge_warns_instead_of_silently_dropping(tmp_path):
+    # config/synapses.yaml lists muse-code->codex twice (+0.5 excitatory,
+    # -0.3 lateral inhibition); the dict loader keeps only the later one.
+    # A duplicate directed pair must warn so the dropped edge is visible.
+    cfg = tmp_path / "config"
+    shutil.copytree(CONFIG, cfg)
+    with open(cfg / "synapses.yaml", "a", encoding="utf-8") as f:
+        f.write("  - {from: strata, to: vision, weight: 0.5}\n")
+        f.write("  - {from: strata, to: vision, weight: 0.5}\n")
+    with pytest.warns(UserWarning, match="duplicate synapse strata->vision"):
+        Network.from_config(cfg)
