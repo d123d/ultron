@@ -120,3 +120,39 @@ synapses:
   - {from: utility,   to: openai-embed,    weight: 0.5}
   - {from: utility,   to: gemini-embed,    weight: 0.4}
   - {from: openai-embed, to: utility,      weight: 0.4}
+  - {from: main, to: muse-abacus, weight: 0.4}
+  - {from: main, to: muse-abliterated, weight: 0.4}
+  - {from: main, to: muse-aiand, weight: 0.4}
+  - {from: main, to: muse-aimlapi, weight: 0.4}
+  - {from: main, to: muse-bothub, weight: 0.4}
+  - {from: main, to: muse-cline, weight: 0.4}
+  - {from: main, to: muse-commandcode, weight: 0.4}
+  - {from: main, to: muse-deepinfra, weight: 0.4}
+  - {from: main, to: muse-doubleword, weight: 0.4}
+  - {from: main, to: muse-edenai, weight: 0.4}
+  - {from: main, to: muse-empiriolabs, weight: 0.4}
+  - {from: main, to: muse-fireworks, weight: 0.4}
+  - {from: main, to: muse-go, weight: 0.4}
+  - {from: main, to: muse-hf, weight: 0.4}
+  - {from: main, to: muse-hyper, weight: 0.4}
+  - {from: main, to: muse-kilo, weight: 0.4}
+  - {from: main, to: muse-llmgateway, weight: 0.4}
+  - {from: main, to: muse-llmtr, weight: 0.4}
+  - {from: main, to: muse-meta, weight: 0.4}
+  - {from: main, to: muse-meta-ember, weight: 0.4}
+  - {from: main, to: muse-meta-wonder, weight: 0.4}
+  - {from: main, to: muse-modal, weight: 0.4}
+  - {from: main, to: muse-nanogpt, weight: 0.4}
+  - {from: main, to: muse-nebius, weight: 0.4}
+  - {from: main, to: muse-ollama, weight: 0.4}
+  - {from: main, to: muse-openrouter, weight: 0.4}
+  - {from: main, to: muse-openrouter-contrib, weight: 0.4}
+  - {from: main, to: muse-opper, weight: 0.4}
+  - {from: main, to: muse-orcarouter, weight: 0.4}
+  - {from: main, to: muse-prime, weight: 0.4}
+  - {from: main, to: muse-requesty, weight: 0.4}
+  - {from: main, to: muse-together, weight: 0.4}
+  - {from: main, to: muse-venice, weight: 0.4}
+  - {from: main, to: muse-vercel, weight: 0.4}
+  - {from: main, to: muse-vultr, weight: 0.4}
+  - {from: main, to: muse-zen, weight: 0.4}

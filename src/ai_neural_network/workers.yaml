@@ -613,6 +613,297 @@ tiers:
     cost: metered
     catalog: google
     notes: Embedding tier (fallback for openai-embed) via Google AI Studio OpenAI-compat /embeddings.
+  # Muse model family on every provider that serves it (models.dev + live /models, 2026-11-14).
+  # Ids from catalogs, not each live-tested; keyless tiers fail fast into fallback (free NIM Glimmer).
+  muse-meta:
+    base_url: https://api.meta.ai/v1
+    model: muse-spark-1.3
+    key_env: META_MODEL_API_KEY
+    cost: metered
+    catalog: meta
+    notes: "Meta Muse via meta. Meta direct; needs dev.meta.ai billing (402 billing_error without it). Also muse-wonder-1.0, muse-ember-1.0, *-contributor"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-meta-wonder:
+    base_url: https://api.meta.ai/v1
+    model: muse-wonder-1.0
+    key_env: META_MODEL_API_KEY
+    cost: metered
+    catalog: meta
+    notes: "Meta Muse via meta. Meta direct, top Muse model ($4/M in)"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-meta-ember:
+    base_url: https://api.meta.ai/v1
+    model: muse-ember-1.0
+    key_env: META_MODEL_API_KEY
+    cost: metered
+    catalog: meta
+    notes: "Meta Muse via meta. Meta direct, small Muse ($0.10/M in)"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-ollama:
+    base_url: https://ollama.com/v1
+    model: muse-spark-open
+    key_env: OLLAMA_API_KEY
+    cost: flat
+    catalog: ollama-cloud
+    notes: "Meta Muse via ollama-cloud. Muse Spark Open on Ollama Cloud (live in /api/tags 2026-11-14)"
+    fallback: [muse, zen]
+  muse-go:
+    base_url: https://opencode.ai/zen/go/v1
+    model: muse-spark-1.3-contributor
+    key_env: OPENCODE_GO_API_KEY
+    cost: flat
+    catalog: opencode-go
+    notes: "Meta Muse via opencode-go. OpenCode Go plan; contributor = Meta may train on requests. Also muse-spark-1.2-contributor"
+    fallback: [muse, zen]
+  muse-zen:
+    base_url: https://opencode.ai/inference/openai/v1
+    model: muse-spark-1.3
+    key_env: OPENCODE_API_KEY
+    cost: metered
+    catalog: opencode
+    notes: "Meta Muse via opencode. OpenCode Zen paid. Also muse-wonder-1.0, muse-ember-1.0, muse-spark-1.2"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-openrouter:
+    base_url: https://openrouter.ai/api/v1
+    model: meta/muse-spark-1.3
+    key_env: OPENROUTER_API_KEY
+    cost: metered
+    catalog: openrouter
+    notes: "Meta Muse via openrouter. Also meta/muse-wonder, meta/muse-ember, meta/muse-spark-open, meta/muse-glimmer-30b, *-contributor ($0.10/M)"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-openrouter-contrib:
+    base_url: https://openrouter.ai/api/v1
+    model: meta/muse-spark-1.3-contributor
+    key_env: OPENROUTER_API_KEY
+    cost: metered
+    catalog: openrouter
+    notes: "Meta Muse via openrouter. Cheapest Spark ($0.10/M in); Meta may train on requests"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-hf:
+    base_url: https://router.huggingface.co/v1
+    model: meta-models/Muse-Spark-Open-816B-A42B
+    key_env: HF_TOKEN
+    cost: metered
+    catalog: huggingface
+    notes: "Meta Muse via huggingface. HF router; also meta-models/Muse-Glimmer-30B"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-fireworks:
+    base_url: https://api.fireworks.ai/inference/v1
+    model: accounts/fireworks/models/muse-spark-open
+    key_env: FIREWORKS_API_KEY
+    cost: metered
+    catalog: fireworks-ai
+    notes: "Meta Muse via fireworks-ai"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-together:
+    base_url: https://api.together.xyz/v1
+    model: meta-models/Muse-Spark-Open-816B-A42B
+    key_env: TOGETHER_API_KEY
+    cost: metered
+    catalog: togetherai
+    notes: "Meta Muse via togetherai. Also meta-models/Muse-Glimmer-30B"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-deepinfra:
+    base_url: https://api.deepinfra.com/v1/openai
+    model: meta-models/Muse-Glimmer-30B
+    key_env: DEEPINFRA_API_KEY
+    cost: metered
+    catalog: deepinfra
+    notes: "Meta Muse via deepinfra"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-nebius:
+    base_url: https://api.tokenfactory.nebius.com/v1
+    model: meta-models/muse-spark-open
+    key_env: NEBIUS_API_KEY
+    cost: metered
+    catalog: nebius
+    notes: "Meta Muse via nebius"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-vercel:
+    base_url: https://ai-gateway.vercel.sh/v1
+    model: meta/muse-spark-1.3
+    key_env: AI_GATEWAY_API_KEY
+    cost: metered
+    catalog: vercel
+    notes: "Meta Muse via vercel. Also wonder, ember, glimmer, spark-open, contributor, meta/muse-image-1.0"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-requesty:
+    base_url: https://router.requesty.ai/v1
+    model: muse-spark-1.3
+    key_env: REQUESTY_API_KEY
+    cost: metered
+    catalog: requesty
+    notes: "Meta Muse via requesty. Also muse-wonder-1.0, muse-spark-open, muse-glimmer-30b"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-vultr:
+    base_url: https://api.vultrinference.com/v1
+    model: muse-glimmer-30b
+    key_env: VULTR_API_KEY
+    cost: metered
+    catalog: vultr
+    notes: "Meta Muse via vultr"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-venice:
+    base_url: https://api.venice.ai/api/v1
+    model: muse-spark-open
+    key_env: VENICE_API_KEY
+    cost: metered
+    catalog: venice
+    notes: "Meta Muse via venice. Also muse-wonder"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-nanogpt:
+    base_url: https://nano-gpt.com/api/v1
+    model: meta/muse-spark-1.3
+    key_env: NANO_GPT_API_KEY
+    cost: metered
+    catalog: nano-gpt
+    notes: "Meta Muse via nano-gpt. Full Muse family"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-kilo:
+    base_url: https://api.kilo.ai/api/gateway
+    model: meta/muse-spark-1.3
+    key_env: KILO_API_KEY
+    cost: metered
+    catalog: kilo
+    notes: "Meta Muse via kilo. Full Muse family"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-aimlapi:
+    base_url: https://api.aimlapi.com/v1
+    model: meta/muse-spark-1.3
+    key_env: AIMLAPI_API_KEY
+    cost: metered
+    catalog: aimlapi
+    notes: "Meta Muse via aimlapi. Also meta/muse-glimmer-30b"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-doubleword:
+    base_url: https://api.doubleword.ai/v1
+    model: meta-models/Muse-Glimmer-30B
+    key_env: DOUBLEWORD_API_KEY
+    cost: metered
+    catalog: doubleword
+    notes: "Meta Muse via doubleword. Cheapest Glimmer ($0.11/M in); also meta/muse-spark-open"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-llmgateway:
+    base_url: https://api.llmgateway.io/v1
+    model: muse-spark-1.3
+    key_env: LLMGATEWAY_API_KEY
+    cost: metered
+    catalog: llmgateway
+    notes: "Meta Muse via llmgateway. Full Muse family"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-modal:
+    base_url: https://inference.us-west.modal.direct/v1
+    model: meta-models/Muse-Spark-Open-816B-A42B
+    key_env: MODAL_PROXY_TOKEN
+    cost: metered
+    catalog: modal
+    notes: "Meta Muse via modal"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-orcarouter:
+    base_url: https://api.orcarouter.ai/v1
+    model: meta/muse-spark-1.2
+    key_env: ORCAROUTER_API_KEY
+    cost: metered
+    catalog: orcarouter
+    notes: "Meta Muse via orcarouter. Also meta/muse-spark-1.1"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-hyper:
+    base_url: https://hyper.charm.land/v1
+    model: muse-spark-open
+    key_env: HYPER_API_KEY
+    cost: metered
+    catalog: hyper
+    notes: "Meta Muse via hyper"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-prime:
+    base_url: https://api.pinference.ai/api/v1
+    model: meta/muse-spark-open
+    key_env: PRIME_API_KEY
+    cost: metered
+    catalog: prime
+    notes: "Meta Muse via prime"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-commandcode:
+    base_url: https://api.commandcode.ai/provider/v1
+    model: meta/muse-spark-1.3
+    key_env: CMD_API_KEY
+    cost: metered
+    catalog: commandcode
+    notes: "Meta Muse via commandcode. Also wonder, spark-open, contributor"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-abacus:
+    base_url: https://routellm.abacus.ai/v1
+    model: muse-spark-1.2
+    key_env: ABACUS_API_KEY
+    cost: metered
+    catalog: abacus
+    notes: "Meta Muse via abacus"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-opper:
+    base_url: https://api.opper.ai/v3/compat
+    model: muse-spark-1.3
+    key_env: OPPER_API_KEY
+    cost: metered
+    catalog: opper
+    notes: "Meta Muse via opper"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-bothub:
+    base_url: https://openai.bothub.ru/v1
+    model: muse-spark-1.3-contributor
+    key_env: BOTHUB_API_KEY
+    cost: metered
+    catalog: bothub
+    notes: "Meta Muse via bothub"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-empiriolabs:
+    base_url: https://api.empiriolabs.ai/v1
+    model: muse-spark-1-3
+    key_env: EMPIRIOLABS_API_KEY
+    cost: metered
+    catalog: empiriolabs
+    notes: "Meta Muse via empiriolabs. Also muse-glimmer-30b"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-edenai:
+    base_url: https://api.edenai.run/v3
+    model: meta/muse-spark-1.3
+    key_env: EDENAI_API_KEY
+    cost: metered
+    catalog: edenai
+    notes: "Meta Muse via edenai. Routes to many hosts"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-cline:
+    base_url: https://api.cline.bot/api/v1
+    model: cline-pass/muse-spark-1.3-contributor
+    key_env: CLINE_API_KEY
+    cost: metered
+    catalog: cline-pass
+    notes: "Meta Muse via cline-pass"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-aiand:
+    base_url: https://api.aiand.com/v1
+    model: meta/muse-spark-open
+    key_env: AIAND_API_KEY
+    cost: metered
+    catalog: aiand
+    notes: "Meta Muse via aiand"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-llmtr:
+    base_url: https://llmtr.com/v1
+    model: meta/muse-spark-1.2-contributor
+    key_env: LLMTR_API_KEY
+    cost: metered
+    catalog: llmtr
+    notes: "Meta Muse via llmtr"
+    fallback: [muse-ollama, muse-go, muse, zen]
+  muse-abliterated:
+    base_url: https://api.abliteratedllm.dev/v1
+    model: muse-spark-open
+    key_env: ABLITERATEDLLM_API_KEY
+    cost: metered
+    catalog: abliteratedllm
+    notes: "Meta Muse via abliteratedllm"
+    fallback: [muse-ollama, muse-go, muse, zen]
+
 routing:
   cost_order:
   - free

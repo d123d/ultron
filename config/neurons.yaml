@@ -440,3 +440,291 @@ neurons:
     refractory_ticks: 1
     receptive_field: [embed, recall]
     notes: "Embedding fallback neuron (Gemini embeddings). Not chat."
+
+  muse-abacus:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-abliterated:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-aiand:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-aimlapi:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-bothub:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-cline:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-commandcode:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-deepinfra:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-doubleword:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-edenai:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-empiriolabs:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-fireworks:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-go:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-hf:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-hyper:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-kilo:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-llmgateway:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-llmtr:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-meta:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-meta-ember:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-meta-wonder:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-modal:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-nanogpt:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-nebius:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-ollama:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-openrouter:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-openrouter-contrib:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-opper:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-orcarouter:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-prime:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-requesty:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-together:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-venice:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-vercel:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-vultr:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  muse-zen:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
