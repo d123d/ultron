@@ -126,6 +126,51 @@ workers:
     - "Read the task instructions in {prompt_file} and complete them in {cwd}. End with FLEET_RESULT JSON."
     - --add-dir
     - "{cwd}"
+  muse-code:
+    kind: agent
+    control: command
+    cost: flat
+    rank: 60
+    capabilities:
+    - code
+    - edit
+    - shell
+    - text
+    - review
+    - research
+    timeout_s: 900
+    notes: Meta Muse Spark coding agent (muse CLI). Registry entry added 2026-11-14 (Ultron review) so the muse-code neuron can actually execute, not just fire in traces.
+    probe:
+    - muse
+    - --version
+    argv:
+    - muse
+    - -p
+    - "Read the task instructions in {prompt_file} and complete them in {cwd}. End with FLEET_RESULT JSON."
+    - --add-dir
+    - "{cwd}"
+  openhuman:
+    kind: agent
+    control: command
+    cost: flat
+    rank: 45
+    capabilities:
+    - text
+    - schedule
+    - unattended
+    - leader
+    - comm
+    timeout_s: 900
+    notes: OpenHuman Second in Command (unattended/scheduled rhythm). Registry entry added 2026-11-14 (Ultron review) so the openhuman neuron can actually execute.
+    probe:
+    - openhuman
+    - --version
+    argv:
+    - openhuman
+    - -p
+    - "Read the task instructions in {prompt_file} and complete them in {cwd}. End with FLEET_RESULT JSON."
+    - --add-dir
+    - "{cwd}"
 tiers:
   tiny:
     base_url: http://127.0.0.1:47831/v1
@@ -360,6 +405,144 @@ tiers:
     catalog: google
     notes: Google AI Studio API key on prepaid credits (billable, 402 depleted 2026-11-06); the subscription is tier gemini. Never picked by --tier auto
     daily_cap: 50
+  strata:
+    base_url: http://127.0.0.1:47831/v1
+    model: qwen3.8-abliterated
+    cost: free
+    notes: Strata local tier under its neuron's own name (added 2026-11-14, Ultron review); tiny/local are its aliases. Keyless on 127.0.0.1.
+  # Direct cloud provider tiers added 2026-11-14 (Ultron review): one per major
+  # OpenAI-compatible cloud API, model ids verified against models.dev that day.
+  # A tier only fires when its key_env is present in ~/.secrets/.env; without the
+  # key it fails fast and the fallback chain takes over. Metered: never auto-picked
+  # ahead of free/flat tiers.
+  openai-api:
+    base_url: https://api.openai.com/v1
+    model: gpt-5.5
+    key_env: OPENAI_API_KEY
+    cost: metered
+    catalog: openai
+    notes: OpenAI direct API (the gpt tier is the ChatGPT-subscription route via codex; this is the key route).
+    fallback: [openrouter-ultra, gpt]
+  anthropic-api:
+    base_url: https://api.anthropic.com/v1
+    model: claude-sonnet-5-5
+    key_env: ANTHROPIC_API_KEY
+    cost: metered
+    catalog: anthropic
+    notes: Anthropic direct via its OpenAI-compatibility layer (/v1/chat/completions). The best/leader tiers are the Claude-subscription route via the claude CLI.
+    fallback: [agy-opus, best]
+  mistral-api:
+    base_url: https://api.mistral.ai/v1
+    model: mistral-large-latest
+    key_env: MISTRAL_API_KEY
+    cost: metered
+    catalog: mistral
+    notes: Mistral AI direct (La Plateforme). NIM route is nim-mistral.
+    fallback: [nim-mistral, openrouter-ultra]
+  cohere-api:
+    base_url: https://api.cohere.com/compatibility/v1
+    model: command-a-03-2025
+    key_env: COHERE_API_KEY
+    cost: metered
+    catalog: cohere
+    notes: Cohere direct via its OpenAI-compatibility endpoint.
+    fallback: [openrouter-ultra, utility]
+  groq-api:
+    base_url: https://api.groq.com/openai/v1
+    model: openai/gpt-oss-120b
+    key_env: GROQ_API_KEY
+    cost: metered
+    catalog: groq
+    notes: Groq direct (LPU, very fast inference).
+    fallback: [ollama-cloud, utility]
+  together-api:
+    base_url: https://api.together.xyz/v1
+    model: openai/gpt-oss-120b
+    key_env: TOGETHER_API_KEY
+    cost: metered
+    catalog: togetherai
+    notes: Together AI direct (open-model cloud).
+    fallback: [openrouter-ultra, nim-ultra]
+  fireworks-api:
+    base_url: https://api.fireworks.ai/inference/v1
+    model: accounts/fireworks/models/deepseek-v4p1-flash
+    key_env: FIREWORKS_API_KEY
+    cost: metered
+    catalog: fireworks-ai
+    notes: Fireworks AI direct (open-model cloud).
+    fallback: [deepseek-api, openrouter-ultra]
+  deepseek-api:
+    base_url: https://api.deepseek.com/v1
+    model: deepseek-v4-pro
+    key_env: DEEPSEEK_API_KEY
+    cost: metered
+    catalog: deepseek
+    notes: DeepSeek direct API. Zen route is zen-deepseek.
+    fallback: [zen-deepseek, openrouter-ultra]
+  xai-api:
+    base_url: https://api.x.ai/v1
+    model: grok-4.5
+    key_env: XAI_API_KEY
+    cost: metered
+    catalog: xai
+    notes: xAI direct (Grok).
+    fallback: [openrouter-ultra, main]
+  perplexity-api:
+    base_url: https://api.perplexity.ai
+    model: sonar-pro
+    key_env: PERPLEXITY_API_KEY
+    cost: metered
+    catalog: perplexity
+    notes: Perplexity direct (grounded search answers).
+    fallback: [gemini-api, main]
+  hf-api:
+    base_url: https://router.huggingface.co/v1
+    model: moonshotai/Kimi-K2-Instruct
+    key_env: HF_TOKEN
+    cost: metered
+    catalog: huggingface
+    notes: Hugging Face Inference Providers router (OpenAI-compatible).
+    fallback: [moonshot-api, openrouter-ultra]
+  cerebras-api:
+    base_url: https://api.cerebras.ai/v1
+    model: gpt-oss-120b
+    key_env: CEREBRAS_API_KEY
+    cost: metered
+    catalog: cerebras
+    notes: Cerebras direct (wafer-scale, very fast inference).
+    fallback: [groq-api, utility]
+  moonshot-api:
+    base_url: https://api.moonshot.ai/v1
+    model: kimi-k2.6
+    key_env: MOONSHOT_API_KEY
+    cost: metered
+    catalog: moonshotai
+    notes: Moonshot AI direct (Kimi).
+    fallback: [hf-api, openrouter-ultra]
+  minimax-api:
+    base_url: https://api.minimax.io/v1
+    model: MiniMax-M2.7
+    key_env: MINIMAX_API_KEY
+    cost: metered
+    catalog: minimax
+    notes: MiniMax direct API (OpenAI-compatible). Media/chat CLI route is the mmx-cli skill; NIM route is nim-minimax.
+    fallback: [nim-minimax, openrouter-ultra]
+  sambanova-api:
+    base_url: https://api.sambanova.ai/v1
+    model: gpt-oss-120b
+    key_env: SAMBANOVA_API_KEY
+    cost: metered
+    catalog: sambanova
+    notes: SambaNova direct (open-model cloud).
+    fallback: [groq-api, openrouter-ultra]
+  deepinfra-api:
+    base_url: https://api.deepinfra.com/v1/openai
+    model: openai/gpt-oss-120b
+    key_env: DEEPINFRA_API_KEY
+    cost: metered
+    catalog: deepinfra
+    notes: DeepInfra direct (open-model cloud).
+    fallback: [together-api, openrouter-ultra]
 routing:
   cost_order:
   - free
