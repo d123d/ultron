@@ -334,7 +334,7 @@ tiers:
     daily_cap: 100
   ollama-cloud:
     base_url: https://ollama.com/v1
-    model: gpt-oss:120b
+    model: kimi-k3.1-pro  # provider's current best (models.dev/docs 2026-11-15)
     key_env: OLLAMA_API_KEY
     cost: free
     catalog: ollama-cloud
@@ -457,7 +457,7 @@ tiers:
     fallback: [nim-mistral, openrouter-ultra]
   cohere-api:
     base_url: https://api.cohere.com/compatibility/v1
-    model: command-a-03-2025
+    model: command-a-plus-05-2026  # provider's current best (models.dev/docs 2026-11-15)
     key_env: COHERE_API_KEY
     cost: metered
     catalog: cohere
@@ -465,7 +465,7 @@ tiers:
     fallback: [openrouter-ultra, utility]
   groq-api:
     base_url: https://api.groq.com/openai/v1
-    model: openai/gpt-oss-120b
+    model: qwen/qwen3.8-27b  # provider's current best (models.dev/docs 2026-11-15)
     key_env: GROQ_API_KEY
     cost: metered
     catalog: groq
@@ -473,7 +473,7 @@ tiers:
     fallback: [ollama-cloud, utility]
   together-api:
     base_url: https://api.together.xyz/v1
-    model: openai/gpt-oss-120b
+    model: moonshotai/Kimi-K3.1-Pro  # provider's current best (models.dev/docs 2026-11-15)
     key_env: TOGETHER_API_KEY
     cost: metered
     catalog: togetherai
@@ -481,7 +481,7 @@ tiers:
     fallback: [openrouter-ultra, nim-ultra]
   fireworks-api:
     base_url: https://api.fireworks.ai/inference/v1
-    model: accounts/fireworks/models/deepseek-v4p1-flash
+    model: accounts/fireworks/models/deepseek-v4p1-flash-1017  # provider's current best (models.dev/docs 2026-11-15)
     key_env: FIREWORKS_API_KEY
     cost: metered
     catalog: fireworks-ai
@@ -521,7 +521,7 @@ tiers:
     fallback: [moonshot-api, openrouter-ultra]
   cerebras-api:
     base_url: https://api.cerebras.ai/v1
-    model: gpt-oss-120b
+    model: qwen-3.8-27b  # provider's current best (models.dev/docs 2026-11-15)
     key_env: CEREBRAS_API_KEY
     cost: metered
     catalog: cerebras
@@ -546,7 +546,7 @@ tiers:
     fallback: [nim-minimax, openrouter-ultra]
   sambanova-api:
     base_url: https://api.sambanova.ai/v1
-    model: gpt-oss-120b
+    model: GLM-5.3  # provider's current best (models.dev/docs 2026-11-15)
     key_env: SAMBANOVA_API_KEY
     cost: metered
     catalog: sambanova
@@ -554,7 +554,7 @@ tiers:
     fallback: [groq-api, openrouter-ultra]
   deepinfra-api:
     base_url: https://api.deepinfra.com/v1/openai
-    model: openai/gpt-oss-120b
+    model: moonshotai/Kimi-K3.1-Pro  # provider's current best (models.dev/docs 2026-11-15)
     key_env: DEEPINFRA_API_KEY
     cost: metered
     catalog: deepinfra
@@ -613,6 +613,28 @@ tiers:
     cost: metered
     catalog: google
     notes: Embedding tier (fallback for openai-embed) via Google AI Studio OpenAI-compat /embeddings.
+  nim-deepseek:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: deepseek-ai/deepseek-v4.1-flash
+    key_env: NVIDIA_API_KEY
+    cost: free
+    catalog: nvidia
+    notes: DeepSeek V4.1 Flash on NIM free.
+    fallback: [nim-ultra, zen]
+  zen-iceman:
+    base_url: http://127.0.0.1:4097/v1
+    model: iceman-free
+    cost: free
+    catalog: opencode
+    notes: OpenCode Zen free (2026-11-06) through ZenFreeBridge :4097.
+    fallback: [zen]
+  zen-inkling:
+    base_url: http://127.0.0.1:4097/v1
+    model: inkling-2-small-free
+    cost: free
+    catalog: opencode
+    notes: Thinking Machines Inkling 2 Small, OpenCode Zen free (2026-11-05) through ZenFreeBridge :4097.
+    fallback: [zen]
   # Muse model family on every provider that serves it (models.dev + live /models, 2026-11-14).
   # Ids from catalogs, not each live-tested; keyless tiers fail fast into fallback (free NIM Glimmer).
   muse-meta:

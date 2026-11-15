@@ -728,3 +728,27 @@ neurons:
     refractory_ticks: 1
     receptive_field: [text]
     notes: "Scaffolded by brain sync --add."
+
+  nim-deepseek:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  zen-iceman:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."
+
+  zen-inkling:
+    region: association
+    kind: tier
+    threshold: 0.5
+    refractory_ticks: 1
+    receptive_field: [text]
+    notes: "Scaffolded by brain sync --add."

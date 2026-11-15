@@ -156,3 +156,6 @@ synapses:
   - {from: main, to: muse-vercel, weight: 0.4}
   - {from: main, to: muse-vultr, weight: 0.4}
   - {from: main, to: muse-zen, weight: 0.4}
+  - {from: main, to: nim-deepseek, weight: 0.4}
+  - {from: main, to: zen-iceman, weight: 0.4}
+  - {from: main, to: zen-inkling, weight: 0.4}
