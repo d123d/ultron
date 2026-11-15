@@ -207,6 +207,23 @@ class Network:
         path = self.save_weights()
         return {"pruned": pruned, "weights_saved": str(path)}
 
+    def merge_weights(self, other: dict[str, float]) -> dict[str, Any]:
+        """Merge another brain's learned weights (weights sync): shared edges average,
+        edges only the other brain has are adopted when both neurons exist here."""
+        merged, added = [], []
+        for key, w in other.items():
+            if "->" not in key:
+                continue
+            a, b = key.split("->", 1)
+            if (a, b) in self.synapses:
+                self.synapses[(a, b)] = round((self.synapses[(a, b)] + float(w)) / 2, 4)
+                merged.append(key)
+            elif a in self.neurons and b in self.neurons:
+                self.synapses[(a, b)] = float(w)
+                added.append(key)
+        self.save_weights()
+        return {"merged": merged, "added": added}
+
     def sync_missing(self) -> list[str]:
         """Neurogenesis check: registry workers/tiers with no neuron yet.
         tiny/local are Strata aliases and count as covered by `strata`."""
@@ -243,6 +260,7 @@ class Network:
         schema: dict | None = None,
         timeout_s: int = 180,
         allow_claude: bool = False,
+        private: bool = False,
         dry_run: bool = False,
         save_path: str | Path | None = None,
         reg: registry.Registry | None = None,
@@ -257,6 +275,18 @@ class Network:
             respect_cooldowns=not dry_run,
         )
         chosen = worker or tier or self._select_target(trace, loaded, capability=capability, allow_claude=allow_claude)
+        if private:
+            # Privacy gate (enforced, not a doc rule): a private stimulus may only execute
+            # on a local tier — no workers (their CLIs phone home), no cloud tiers.
+            from .llm import local_tiers
+            from .procs import FleetError
+
+            if worker:
+                raise FleetError("private fire: workers are not local; name a local tier or drop --worker")
+            local = set(local_tiers(loaded)) | {"strata"}
+            if chosen not in local:
+                chosen = next((n for n in reversed(trace.fired) if n in local), None) or "strata"
+            tier = chosen
         result: dict[str, Any] | None = None
         success = bool(trace.fired)
 
@@ -278,7 +308,7 @@ class Network:
             elif tier:
                 from .llm import ask
 
-                r = ask(loaded, tier, stimulus, system=system, schema=schema, timeout_s=timeout_s)
+                r = ask(loaded, tier, stimulus, system=system, schema=schema, timeout_s=timeout_s, private=private)
                 success = r.valid is not False
                 result = r.to_dict()
             elif chosen and chosen in self.neurons:
@@ -293,6 +323,7 @@ class Network:
                     schema=schema,
                     timeout_s=timeout_s,
                     allow_claude=allow_claude,
+                    private=private,
                 )
                 success = bool(inv and inv.get("ok"))
                 result = inv
@@ -303,7 +334,9 @@ class Network:
                 success = bool(v.get("passed"))
                 result = {"kind": "cerebellum", "verify": v}
 
-            self.learn(trace, success=success)
+            from .costs import modulation as _cost_mod
+
+            self.learn(trace, success=success, modulation=_cost_mod(loaded))
             weights_file = self.save_weights(save_path)
         else:
             weights_file = None
