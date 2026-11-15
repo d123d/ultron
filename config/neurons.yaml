@@ -281,3 +281,118 @@ neurons:
     refractory_ticks: 1
     receptive_field: [text, code, reasoning]
     notes: "OpenCode Go tier (go-pro is its stronger sibling neuron)."
+
+  # Direct cloud provider neurons (added 2026-11-14, Ultron review) — one per
+  # direct-API tier in workers.yaml; see docs/PROVIDERS.md for the full matrix.
+  openai-api:
+    region: prefrontal
+    kind: tier
+    threshold: 0.60
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, code, review]
+    notes: "OpenAI direct API (OPENAI_API_KEY)."
+  anthropic-api:
+    region: prefrontal
+    kind: tier
+    threshold: 0.65
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, review, code]
+    notes: "Anthropic direct API via OpenAI-compat layer (ANTHROPIC_API_KEY)."
+  mistral-api:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, code]
+    notes: "Mistral AI direct (MISTRAL_API_KEY)."
+  cohere-api:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning]
+    notes: "Cohere direct (COHERE_API_KEY)."
+  groq-api:
+    region: memory
+    kind: tier
+    threshold: 0.35
+    refractory_ticks: 1
+    receptive_field: [text, recall, reasoning]
+    notes: "Groq direct — fast inference, fast recall (GROQ_API_KEY)."
+  together-api:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, code]
+    notes: "Together AI direct (TOGETHER_API_KEY)."
+  fireworks-api:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, code]
+    notes: "Fireworks AI direct (FIREWORKS_API_KEY)."
+  deepseek-api:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, code]
+    notes: "DeepSeek direct (DEEPSEEK_API_KEY)."
+  xai-api:
+    region: association
+    kind: tier
+    threshold: 0.52
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, research]
+    notes: "xAI Grok direct (XAI_API_KEY)."
+  perplexity-api:
+    region: association
+    kind: tier
+    threshold: 0.48
+    refractory_ticks: 1
+    receptive_field: [text, research, reasoning]
+    notes: "Perplexity direct — grounded search (PERPLEXITY_API_KEY)."
+  hf-api:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, code]
+    notes: "Hugging Face router direct (HF_TOKEN)."
+  cerebras-api:
+    region: memory
+    kind: tier
+    threshold: 0.35
+    refractory_ticks: 1
+    receptive_field: [text, recall]
+    notes: "Cerebras direct — fast inference, fast recall (CEREBRAS_API_KEY)."
+  moonshot-api:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, code]
+    notes: "Moonshot Kimi direct (MOONSHOT_API_KEY)."
+  minimax-api:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning]
+    notes: "MiniMax direct (MINIMAX_API_KEY); mmx-cli skill is its media route."
+  sambanova-api:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning]
+    notes: "SambaNova direct (SAMBANOVA_API_KEY)."
+  deepinfra-api:
+    region: association
+    kind: tier
+    threshold: 0.50
+    refractory_ticks: 1
+    receptive_field: [text, reasoning, code]
+    notes: "DeepInfra direct (DEEPINFRA_API_KEY)."
