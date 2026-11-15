@@ -16,7 +16,7 @@ work, cerebellum checks verify it, and the outcome rewires the synapses.
 
 | AI Fleet | Ultron | Brain |
 |---|---|---|
-| worker / model tier | neuron (`config/neurons.yaml`, 39) | neuron |
+| worker / model tier | neuron (`config/neurons.yaml`, 55) | neuron |
 | router picks one worker | propagation; population decides | no central controller |
 | task card | stimulus / signal | sensory input |
 | capability list | receptive field | receptive field |
@@ -61,10 +61,24 @@ edges relax on success, tighten on failure), and **sleep consolidation**
 (unused weights decay; faded synapses prune to zero). Working memory:
 `excite --carry` starts warm from the previous population.
 
+## Cloud providers
+
+Every major cloud provider has a direct tier + neuron (OpenAI, Anthropic,
+Google, Mistral, Cohere, Groq, Cerebras, Together, Fireworks, DeepInfra,
+SambaNova, DeepSeek, xAI, Perplexity, Moonshot, MiniMax, Hugging Face,
+NVIDIA NIM, Ollama Cloud, OpenRouter, OpenCode Go), plus subscription/CLI
+routes (Claude, Codex, Antigravity, Copilot, Muse). Azure, Bedrock, Vertex
+and Cloudflare have no OpenAI-compatible bearer endpoint — catalog-only,
+reachable via OpenRouter/NIM until an adapter lands. Full matrix, keys and
+fallbacks: `docs/PROVIDERS.md`. A tier fires only when its `key_env` is in
+`~/.secrets/.env`; otherwise its fallback chain takes over.
+
 ## Skill layer
 
 ponytail (minimum code), caveman (minimum tokens), find-skills
-(skills.sh acquisition) — see `docs/SKILLS.md` and `config/skills.yaml`.
+(skills.sh acquisition), plus the cloud provider skills —
+openrouter-typescript-sdk, mmx-cli, cloud-providers — see
+`docs/SKILLS.md` and `config/skills.yaml`.
 
 ## Access for other agents
 
