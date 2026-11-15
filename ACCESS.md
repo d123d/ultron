@@ -16,7 +16,7 @@ Dustin already have his GitHub access. Old links to
    ```json
    { "mcpServers": { "ultron": { "command": "uv", "args": ["run", "--directory", "<path-to-ultron>", "ultron-mcp"] } } }
    ```
-3. **Skills only** (ponytail / caveman / find-skills, via skills.sh):
+3. **Skills only** (ponytail / caveman / find-skills / openrouter-typescript-sdk / mmx-cli / cloud-providers, via skills.sh):
    ```bash
    npx skills add d123d/ultron
    ```
@@ -31,4 +31,8 @@ Dustin already have his GitHub access. Old links to
   do not edit `config/weights.json` by hand.
 - Keys live in `~/.secrets/.env` (names per tier in
   `src/ai_neural_network/workers.yaml`). Never commit a key.
+- Cloud access: every major provider has a direct tier (see
+  `docs/PROVIDERS.md`); a tier fires only when its key is present,
+  otherwise its fallback chain answers. Azure / Bedrock / Vertex /
+  Cloudflare are catalog-only (no bearer endpoint) — route via OpenRouter.
 - `--private` work stays on local (Strata) neurons. Never route it out.
