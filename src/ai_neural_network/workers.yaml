@@ -911,16 +911,18 @@ routing:
   - metered
   - claude
   chains:
+    # 2026-11-15, ten world-project cards: pi finished 5 of 5; opencode finished 2 and failed 5 at start
+    # (its free model has no image input, and upstream 'Internal service failure'). pi goes first of the free two.
     code:
     - codex
     - agy
-    - opencode
     - pi
+    - opencode
     edit:
     - codex
     - agy
-    - opencode
     - pi
+    - opencode
     review:
     - codex
     - agy

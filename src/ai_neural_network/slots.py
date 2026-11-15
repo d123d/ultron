@@ -163,6 +163,33 @@ def run_job(reg: Registry, kind: str, prompt: str, *, cwd: str | None = None, do
     raise FleetError(f"job {kind}: every model failed: " + " | ".join(errors))
 
 
+QC_PROMPT = (
+    "Render QC for a 3D film asset{subject}. FAIL when the picture is unusable: mostly one flat colour or "
+    "gradient, camera inside or pressed against geometry, black or empty frame, magenta missing-texture surfaces, "
+    "or the subject cannot be recognised. Minor roughness is a PASS. Reply in two lines: what is shown, then "
+    "exactly 'VERDICT: PASS' or 'VERDICT: FAIL - <reason>'.")
+
+
+def qc_images(reg: Registry, root: str, *, since_min: int = 180, limit: int = 8, subject: str = "") -> dict[str, Any]:
+    """Look at the newest renders under root with the vision job slot. A check command for cards whose worker
+    cannot see its own pictures: blind harnesses reported unusable renders as done (2026-11-15)."""
+    cutoff = time.time() - since_min * 60
+    files = sorted((p for p in Path(root).rglob("*") if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp")
+                    and ".git" not in p.parts and p.stat().st_mtime >= cutoff),
+                   key=lambda p: -p.stat().st_mtime)[:limit]
+    rows = []
+    for f in files:
+        try:
+            text = run_job(reg, "vision", QC_PROMPT.format(subject=f" ({subject})" if subject else ""),
+                           images=[str(f)], timeout_s=240)["text"]
+        except FleetError as e:  # no eye available is not a pass
+            text = f"VERDICT: FAIL - vision job unavailable: {str(e)[:120]}"
+        rows.append({"file": str(f), "pass": "VERDICT: PASS" in text.upper(), "note": text.strip()[-300:]})
+    ok = bool(rows) and all(r["pass"] for r in rows)
+    return {"ok": ok, "checked": len(rows), "results": rows,
+            "reason": "" if rows else f"no image newer than {since_min} min under {root}"}
+
+
 def _pid_alive(pid: int) -> bool:
     import subprocess
     import sys

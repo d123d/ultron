@@ -227,6 +227,13 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--allow-claude", action="store_true")
     s.add_argument("--json", action="store_true")
 
+    s = sub.add_parser("qc", help="vision QC of the newest renders under a folder; exit 1 on any FAIL (use as --done-when)")
+    s.add_argument("root", nargs="?", default=".")
+    s.add_argument("--since", type=int, default=180, help="only images changed in the last N minutes")
+    s.add_argument("--limit", type=int, default=8)
+    s.add_argument("--subject", default="")
+    s.add_argument("--json", action="store_true")
+
     s = sub.add_parser("daemon", help="background loop (started at Windows logon): drain the board, heartbeat")
     s.add_argument("--interval", type=int, default=60)
     s.add_argument("--once", action="store_true")
@@ -638,6 +645,14 @@ def _dispatch(args) -> int:
                              files=args.file, images=args.image, timeout_s=args.timeout, allow_claude=args.allow_claude)
         _out(data, args.json, f"[{data['job']} -> {data['by']}: {data['status']}]\n{data.get('text') or data.get('reason')}")
         return 0 if data["status"] == "ok" else 1
+
+    if args.cmd == "qc":
+        from . import slots
+
+        data = slots.qc_images(reg, args.root, since_min=args.since, limit=args.limit, subject=args.subject)
+        lines = [f"{'PASS' if r['pass'] else 'FAIL'} {r['file']}\n     {r['note']}" for r in data["results"]]
+        _out(data, args.json, "\n".join(lines) or data["reason"])
+        return 0 if data["ok"] else 1
 
     if args.cmd == "daemon":
         from . import slots

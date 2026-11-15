@@ -109,3 +109,16 @@ def test_reclaim_reopens_cards_of_dead_worker_loops(monkeypatch):
             self.reopened.append(issue_id)
 
     assert slots.reclaim_stale(FakeBoard()) == ["a"]
+
+
+def test_qc_fails_on_bad_or_missing_renders(tmp_path, monkeypatch):
+    reg = registry.load()
+    assert slots.qc_images(reg, str(tmp_path))["ok"] is False  # no render at all is not a pass
+    (tmp_path / "good.png").write_bytes(b"x")
+    (tmp_path / "bad.png").write_bytes(b"x")
+    monkeypatch.setattr(slots, "run_job", lambda reg, kind, prompt, images, **kw: {
+        "text": "a dome\nVERDICT: PASS" if "good" in images[0] else "grey\nVERDICT: FAIL - flat colour"})
+    out = slots.qc_images(reg, str(tmp_path))
+    assert out["checked"] == 2 and out["ok"] is False
+    (tmp_path / "bad.png").unlink()
+    assert slots.qc_images(reg, str(tmp_path))["ok"] is True

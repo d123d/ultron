@@ -80,3 +80,19 @@ or reopens it. Heartbeat: `<state>/daemon.json`. One sleep consolidation a day.
 - Muse worker is disabled until `muse login` is approved (CLI 1.4.20 installed, not logged in).
 - Not hand-reviewed yet: `evals.py` task data, `gitinfo.py`, `worktree.py`, `throttle.py` lock internals.
 - Known limits: `health.json` updates are thread-safe but not cross-process safe (daemon + CLI can lose an update); `ledger.read()` reads the whole file on every capped call.
+
+## Vision QC gate (2026-11-15)
+
+`ultron qc <folder> --since <minutes> --subject "<what it should show>"` looks at the newest
+renders with the `vision` job slot and exits 1 on any FAIL, or when there is no new render. Use it
+as a card check: `--done-when "ultron qc kits --since 120"`. A failed check sends the verdicts back
+to the worker for one repair round.
+
+Why: coding harnesses cannot see pictures. In the first ten world-project cards two workers
+reported "done" on kits whose renders were black frames or a camera pressed against a grey wall;
+the only check was "a commit exists". The gate agreed with a human look on every image tried
+(3 of 5 Subsurface Colony renders failed, 3 of 3 BioDome renders passed).
+
+Worker order from the same ten cards: Pi finished 5 of 5; OpenCode finished 2 and failed 5 at
+start (its free model has no image input); Antigravity ran out of credits after 7 minutes.
+Failover carried every card without an operator. Pi now goes ahead of OpenCode for code and edit.
