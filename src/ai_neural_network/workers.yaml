@@ -617,7 +617,7 @@ tiers:
   # Ids from catalogs, not each live-tested; keyless tiers fail fast into fallback (free NIM Glimmer).
   muse-meta:
     base_url: https://api.meta.ai/v1
-    model: muse-spark-1.3
+    model: muse-spark-1.3-contributor  # cheapest Muse here: $0.1/$0.2 per 1M
     key_env: META_MODEL_API_KEY
     cost: metered
     catalog: meta
@@ -657,7 +657,7 @@ tiers:
     fallback: [muse, zen]
   muse-zen:
     base_url: https://opencode.ai/inference/openai/v1
-    model: muse-spark-1.3
+    model: muse-ember-1.0  # cheapest Muse here: $0.1/$0.5 per 1M
     key_env: OPENCODE_API_KEY
     cost: metered
     catalog: opencode
@@ -665,7 +665,7 @@ tiers:
     fallback: [muse-ollama, muse-go, muse, zen]
   muse-openrouter:
     base_url: https://openrouter.ai/api/v1
-    model: meta/muse-spark-1.3
+    model: meta/muse-ember  # cheapest Muse here: $0.1/$0.5 per 1M
     key_env: OPENROUTER_API_KEY
     cost: metered
     catalog: openrouter
@@ -681,7 +681,7 @@ tiers:
     fallback: [muse-ollama, muse-go, muse, zen]
   muse-hf:
     base_url: https://router.huggingface.co/v1
-    model: meta-models/Muse-Spark-Open-816B-A42B
+    model: meta-models/Muse-Glimmer-30B  # smaller, cheaper on HF credits
     key_env: HF_TOKEN
     cost: metered
     catalog: huggingface
@@ -721,7 +721,7 @@ tiers:
     fallback: [muse-ollama, muse-go, muse, zen]
   muse-vercel:
     base_url: https://ai-gateway.vercel.sh/v1
-    model: meta/muse-spark-1.3
+    model: meta/muse-spark-1.3-contributor  # cheapest Muse here: $0.1/$0.2 per 1M
     key_env: AI_GATEWAY_API_KEY
     cost: metered
     catalog: vercel
@@ -729,7 +729,7 @@ tiers:
     fallback: [muse-ollama, muse-go, muse, zen]
   muse-requesty:
     base_url: https://router.requesty.ai/v1
-    model: muse-spark-1.3
+    model: muse-glimmer-30b  # cheapest Muse here: $0.0/$0.0 per 1M
     key_env: REQUESTY_API_KEY
     cost: metered
     catalog: requesty
@@ -753,7 +753,7 @@ tiers:
     fallback: [muse-ollama, muse-go, muse, zen]
   muse-nanogpt:
     base_url: https://nano-gpt.com/api/v1
-    model: meta/muse-spark-1.3
+    model: meta/muse-spark-1.3-contributor  # cheapest Muse here: $0.1/$0.2 per 1M
     key_env: NANO_GPT_API_KEY
     cost: metered
     catalog: nano-gpt
@@ -761,7 +761,7 @@ tiers:
     fallback: [muse-ollama, muse-go, muse, zen]
   muse-kilo:
     base_url: https://api.kilo.ai/api/gateway
-    model: meta/muse-spark-1.3
+    model: meta/muse-spark-1.3-contributor  # cheapest Muse here: $0.1/$0.2 per 1M
     key_env: KILO_API_KEY
     cost: metered
     catalog: kilo
@@ -769,7 +769,7 @@ tiers:
     fallback: [muse-ollama, muse-go, muse, zen]
   muse-aimlapi:
     base_url: https://api.aimlapi.com/v1
-    model: meta/muse-spark-1.3
+    model: meta/muse-glimmer-30b  # cheapest Muse here: $0.3703/$1.587 per 1M
     key_env: AIMLAPI_API_KEY
     cost: metered
     catalog: aimlapi
@@ -785,7 +785,7 @@ tiers:
     fallback: [muse-ollama, muse-go, muse, zen]
   muse-llmgateway:
     base_url: https://api.llmgateway.io/v1
-    model: muse-spark-1.3
+    model: muse-spark-1.3-contributor  # cheapest Muse here: $0.1/$0.2 per 1M
     key_env: LLMGATEWAY_API_KEY
     cost: metered
     catalog: llmgateway
@@ -801,7 +801,7 @@ tiers:
     fallback: [muse-ollama, muse-go, muse, zen]
   muse-orcarouter:
     base_url: https://api.orcarouter.ai/v1
-    model: meta/muse-spark-1.2
+    model: meta/muse-spark-1.1  # cheapest Muse here: $1.25/$4.25 per 1M
     key_env: ORCAROUTER_API_KEY
     cost: metered
     catalog: orcarouter
@@ -825,7 +825,7 @@ tiers:
     fallback: [muse-ollama, muse-go, muse, zen]
   muse-commandcode:
     base_url: https://api.commandcode.ai/provider/v1
-    model: meta/muse-spark-1.3
+    model: meta/muse-spark-1.3-contributor  # cheapest Muse here: $0.1/$0.2 per 1M
     key_env: CMD_API_KEY
     cost: metered
     catalog: commandcode
@@ -833,7 +833,7 @@ tiers:
     fallback: [muse-ollama, muse-go, muse, zen]
   muse-abacus:
     base_url: https://routellm.abacus.ai/v1
-    model: muse-spark-1.2
+    model: muse-spark-1.1  # cheapest Muse here: $1.25/$4.25 per 1M
     key_env: ABACUS_API_KEY
     cost: metered
     catalog: abacus
@@ -841,7 +841,7 @@ tiers:
     fallback: [muse-ollama, muse-go, muse, zen]
   muse-opper:
     base_url: https://api.opper.ai/v3/compat
-    model: muse-spark-1.3
+    model: muse-spark-1.2  # cheapest Muse here: $1.25/$4.25 per 1M
     key_env: OPPER_API_KEY
     cost: metered
     catalog: opper
@@ -857,7 +857,7 @@ tiers:
     fallback: [muse-ollama, muse-go, muse, zen]
   muse-empiriolabs:
     base_url: https://api.empiriolabs.ai/v1
-    model: muse-spark-1-3
+    model: muse-glimmer-30b  # cheapest Muse here: $0.2/$0.8 per 1M
     key_env: EMPIRIOLABS_API_KEY
     cost: metered
     catalog: empiriolabs
@@ -865,7 +865,7 @@ tiers:
     fallback: [muse-ollama, muse-go, muse, zen]
   muse-edenai:
     base_url: https://api.edenai.run/v3
-    model: meta/muse-spark-1.3
+    model: deepinfra/meta-models/Muse-Glimmer-30B  # cheapest Muse here: $0.3/$1.2 per 1M
     key_env: EDENAI_API_KEY
     cost: metered
     catalog: edenai
