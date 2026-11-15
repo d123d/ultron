@@ -16,7 +16,7 @@ work, cerebellum checks verify it, and the outcome rewires the synapses.
 
 | AI Fleet | Ultron | Brain |
 |---|---|---|
-| worker / model tier | neuron (`config/neurons.yaml`, 55) | neuron |
+| worker / model tier | neuron (`config/neurons.yaml`, 61) | neuron |
 | router picks one worker | propagation; population decides | no central controller |
 | task card | stimulus / signal | sensory input |
 | capability list | receptive field | receptive field |
@@ -52,6 +52,12 @@ brain leader elect
 
 MCP server: `brain-mcp` (also `ultron-mcp`). CLI also installs as `ultron`.
 
+v0.4.0 adds: `brain providers` (who can fire today), `brain bakeoff --apply`
+(eval scores -> synapses), `brain remember`/`recall` (embedding memory),
+`brain spend` + cost-scaled learning, `brain ask --stream`,
+`brain sync --add` (neurogenesis scaffolding), `brain weights merge|export`
+(weights sync), and a code-enforced privacy gate on `brain fire --private`.
+
 ## Learning
 
 Hebbian, with the merge's upgrades: **STDP-lite** (causal firing order
@@ -68,8 +74,8 @@ Google, Mistral, Cohere, Groq, Cerebras, Together, Fireworks, DeepInfra,
 SambaNova, DeepSeek, xAI, Perplexity, Moonshot, MiniMax, Hugging Face,
 NVIDIA NIM, Ollama Cloud, OpenRouter, OpenCode Go), plus subscription/CLI
 routes (Claude, Codex, Antigravity, Copilot, Muse). Azure, Bedrock, Vertex
-and Cloudflare have no OpenAI-compatible bearer endpoint — catalog-only,
-reachable via OpenRouter/NIM until an adapter lands. Full matrix, keys and
+and Cloudflare speak non-bearer APIs and run through the adapter layer
+(`providers.py`: SigV4, api-key header, OAuth/express, account-id URL). Full matrix, keys and
 fallbacks: `docs/PROVIDERS.md`. A tier fires only when its `key_env` is in
 `~/.secrets/.env`; otherwise its fallback chain takes over.
 
