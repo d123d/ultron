@@ -30,7 +30,6 @@ synapses:
   - {from: claude,           to: muse-code,        weight: 0.6}
   - {from: claude,           to: opencode,         weight: 0.8}
   - {from: claude,           to: pi,               weight: 0.7}
-  - {from: muse-code,        to: codex,            weight: 0.5}
   - {from: muse-code,        to: opencode,         weight: 0.7}
   - {from: muse-code,        to: pi,               weight: 0.6}
   - {from: codex,            to: opencode,         weight: 0.7}
@@ -62,6 +61,9 @@ synapses:
   - {from: pi,               to: opencode,         weight: -0.5}
   - {from: claude,           to: best,             weight: -0.4}
   - {from: codex,            to: claude,           weight: -0.3}
+  # muse-code <-> codex is inhibition-only by design: the two code agents
+  # must not double-fire on the same task (single weight per directed edge,
+  # so no +0.5 excitatory muse-code->codex entry — resolved Nov 14, 2026)
   - {from: muse-code,        to: codex,            weight: -0.3}
   - {from: codex,            to: muse-code,        weight: -0.3}
   - {from: claude-leader,    to: codex-leader,     weight: -0.4}
