@@ -15,6 +15,13 @@ def fake(mode: str, **extra) -> dict:
             **extra}
 
 
+@pytest.fixture(autouse=True)
+def _isolated_state(tmp_path, monkeypatch):
+    """No test reads or writes this machine's real state (learned weights, health, ledger)."""
+    monkeypatch.setenv("FLEET_STATE_DIR", str(tmp_path / "state-default"))
+    monkeypatch.delenv("BRAIN_STATE_DIR", raising=False)
+
+
 @pytest.fixture
 def env(tmp_path, monkeypatch):
     """Isolated state dir + registry with fake workers; returns (registry_path, state_dir)."""
