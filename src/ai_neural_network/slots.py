@@ -161,10 +161,16 @@ def daemon(interval_s: int = 60, once: bool = False) -> None:
         last_sleep = json.loads(hb.read_text(encoding="utf-8")).get("last_sleep", "")
     except (OSError, ValueError):
         last_sleep = ""
+    def beat(note: str, state: str) -> None:
+        hb.write_text(json.dumps({"pid": os.getpid(), "ts": datetime.now(UTC).isoformat(timespec="seconds"),
+                                  "state": state, "processed": processed, "last_error": note,
+                                  "last_sleep": last_sleep}), encoding="utf-8")
+
     while True:
         note = ""
         try:
             reg = registry.load()  # reload: config edits apply without a restart
+            beat("", "working")  # a card can run an hour: without this the heartbeat looked dead meanwhile
             processed += len(work(reg, Board(reg), max_tasks=1))
             today = datetime.now().date().isoformat()
             if last_sleep != today:
@@ -172,9 +178,7 @@ def daemon(interval_s: int = 60, once: bool = False) -> None:
                 last_sleep = today
         except Exception as e:  # noqa: BLE001 - the daemon must outlive one bad card or a missing board
             note = f"{type(e).__name__}: {e}"[:300]
-        hb.write_text(json.dumps({"pid": os.getpid(), "ts": datetime.now(UTC).isoformat(timespec="seconds"),
-                                  "processed": processed, "last_error": note, "last_sleep": last_sleep}),
-                      encoding="utf-8")
+        beat(note, "idle")
         if once:
             return
         time.sleep(interval_s)

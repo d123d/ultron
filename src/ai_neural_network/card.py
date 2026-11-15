@@ -81,6 +81,8 @@ def render_prompt(card: TaskCard, worker: Worker) -> str:
         "complete change, stdlib/existing patterns first, no unrequested abstractions, test for new logic. "
         "If checks are listed, run them before finishing. Never make a check pass by faking or shadowing its tool "
         "(no local pytest.py and the like): if a check's tool is missing, say so and finish with status partial.",
+        'Help on tap: `C:\\AI\\bin\\ultron.cmd job vision "<question>" --image <file>` checks a render or screenshot '
+        'you made (look before you call it done); `job quick|reason "<prompt>"` gives a second opinion.',
         "Write prose in caveman ultra: terse, no filler, technical substance exact. Code, commands, paths and the "
         "FLEET_RESULT line stay normal.",
         "Finish with one line exactly like:",

@@ -65,3 +65,6 @@ or reopens it. Heartbeat: `<state>/daemon.json`. One sleep consolidation a day.
   tier on that key cools for 6 hours. A rejected key (401/403) cools all its tiers too.
 - Live that day: Ollama Cloud 402 on every model, Cerebras 402, SambaNova key rejected.
 - Workers are told never to fake a missing check tool (one wrote a local `pytest.py`).
+- OpenCode worker crashed at start: acpx ran a broken npx-cached `opencode-ai`. Fix is machine config, `~/.acpx/config.json` with `agents.opencode.argv` = the installed `opencode.exe acp`.
+- Daemon heartbeat now says `working` while a card runs; worker prompts point at `ultron.cmd job vision` for render QC.
+- First world-project card through the board: agy ran out of credits after 7 min, OpenCode crashed, Pi finished it in 440 s (failover worked without an operator).
