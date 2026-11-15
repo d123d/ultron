@@ -60,3 +60,49 @@ def parse_fleet_result(text: str) -> dict[str, Any] | None:
                 return None
         return data if isinstance(data, dict) else None
     return None
+
+HANDOFF_SCHEMA: dict[str, Any] = {
+    "type": "object",
+"required": ["status", "summary"],
+"properties": {
+    "status": {"type": "string", "enum": ["ok", "failed", "blocked", "timeout", "error"]},
+        "summary": {"type": "string", "minLength": 1},
+        "files_changed": {"type": "array", "items": {"type": "string"}},
+    },
+    "additionalProperties": True,
+}
+
+def validate_handoff(payload: dict[str, Any]) -> tuple[bool, list[str]]:
+    if not isinstance(payload, dict):
+        return False, ["payload must be a dict"]
+    try:
+        import jsonschema
+
+        validator = jsonschema.Draft7Validator(HANDOFF_SCHEMA)
+        errors = sorted(validator.iter_errors(payload), key=lambda e: list(e.path))
+        if not errors:
+            return True, []
+        return False, [e.message for e in errors]
+    except ImportError:
+        errors: list[str] = []
+        allowed = {"ok", "failed", "blocked", "timeout", "error"}
+        if payload.get("status") not in allowed:
+            errors.append(f"status must be one of {sorted(allowed)}")
+        summary = payload.get("summary")
+        if not isinstance(summary, str) or not summary:
+            errors.append("summary must be a non-empty string")
+        if "files_changed" in payload:
+            fc = payload["files_changed"]
+            if not isinstance(fc, list) or not all(isinstance(x, str) for x in fc):
+                errors.append("files_changed must be a list of strings")
+        return (len(errors) == 0), errors
+
+
+def parse_valid_fleet_result(text: str) -> tuple[dict[str, Any] | None, list[str]]:
+    payload = parse_fleet_result(text)
+    if payload is None:
+        return None, ["no valid FLEET_RESULT found"]
+    ok, errors = validate_handoff(payload)
+    if not ok:
+        return None, errors
+    return payload, []
