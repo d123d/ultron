@@ -23,3 +23,13 @@
 | ledger | episode record; weights are consolidated memory | hippocampus |
 | doctor / health | brainstem homeostasis | brainstem |
 | fleet CLI | `neuro` CLI: status / excite / learn | — |
+
+## Added 2026-11-14 (Ultron review)
+
+| Piece | Neuron | Region / role |
+|---|---|---|
+| muse-code worker (muse CLI) | neuron `muse-code` | prefrontal — now executable, was trace-only |
+| openhuman worker | neuron `openhuman` | memory — now executable, was trace-only |
+| strata tier (tiny/local aliases) | neuron `strata` | sensory — now executable, was trace-only |
+| 16 direct cloud API tiers (OpenAI, Anthropic, Mistral, Cohere, Groq, Cerebras, Together, Fireworks, DeepInfra, SambaNova, DeepSeek, xAI, Perplexity, Moonshot, MiniMax, Hugging Face) | neurons `*-api` | association / memory / prefrontal — see docs/PROVIDERS.md |
+| cloud provider skills (openrouter-typescript-sdk, mmx-cli, cloud-providers) | skill layer | all regions |
