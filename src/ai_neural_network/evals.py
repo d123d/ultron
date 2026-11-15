@@ -176,3 +176,25 @@ def evaluate(reg: Registry, tiers: list[str], only: list[str] | None = None, tim
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     return sorted(rows, key=lambda r: (-r["score"], r["median_s"] or 1e9))
+
+
+def apply_scores(net, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Feed bake-off scores back into the synapses (the eval -> learning loop).
+
+    Each scored tier's incoming excitatory edges move by 0.05 * (2*frac - 1):
+    a perfect score strengthens every pathway into that neuron, a zero weakens
+    them, a half score leaves them alone. Returns the changed edges.
+    """
+    changed = []
+    for r in rows:
+        tier, n = r.get("tier"), r.get("n") or 0
+        if not tier or not n or tier not in net.neurons:
+            continue
+        delta = 0.05 * (2 * (r["score"] / n) - 1)
+        if not delta:
+            continue
+        for (a, b), w in list(net.synapses.items()):
+            if b == tier and w > 0:
+                net.synapses[(a, b)] = max(0.0, min(1.0, w + delta))
+                changed.append({"edge": f"{a}->{b}", "tier": tier, "delta": round(delta, 4)})
+    return changed
