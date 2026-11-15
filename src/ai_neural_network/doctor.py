@@ -141,3 +141,16 @@ def doctor(reg: Registry, live: bool = False, catalog: bool = False) -> list[dic
             if row["id"] in notes and row["kind"] == "tier":
                 row["note"] = "; ".join(filter(None, [row["note"], "catalog: " + notes[row["id"]]]))
     return rows
+
+
+def provider_rows(reg: Registry) -> list[dict]:
+    """Which tiers can actually fire today: key present (names only, never values), adapter, cooldown."""
+    from .llm import _secret_or_none
+
+    rows = []
+    for t in reg.tiers.values():
+        rows.append({"id": t.id, "provider": t.catalog or t.adapter or t.base_url.split("/")[0],
+                     "model": t.model, "cost": t.cost, "adapter": t.adapter or "-",
+                     "key_env": t.key_env or "-", "key_present": (None if not t.key_env else bool(_secret_or_none(t.key_env))),
+                     "cooldown_until": health.iso(u) if (u := health.cooldown_until(t.id)) else None})
+    return rows
