@@ -917,11 +917,13 @@ routing:
     - codex
     - agy
     - pi
+    - github  # Copilot CLI: solved a coding card with its check 2026-11-15; first stop when pi fails a card
     - opencode
     edit:
     - codex
     - agy
     - pi
+    - github
     - opencode
     review:
     - codex
