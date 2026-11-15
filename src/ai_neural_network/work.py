@@ -8,6 +8,7 @@ import threading
 import time
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import replace
 
 from .board import Board
 from .card import TaskCard
@@ -39,7 +40,9 @@ def work(reg: Registry, board: Board, *, max_tasks: int = 1, max_minutes: float 
         if issue is None:
             break
         card = Board.card_of(board.get(issue["id"]))
-        env = run_card(reg, card, card.worker or worker, opts)
+        # a card that failed its checks before starts with the next harness, not the one that just failed it
+        retry_opts = replace(opts or RunOptions(), rotate=_fail_count(issue))
+        env = run_card(reg, card, card.worker or worker, retry_opts)
         row = {"task": issue["id"], "title": issue.get("title"), "status": env.status, "worker": env.worker,
                "run_id": env.run_id, "reason": env.reason}
         if env.ok:

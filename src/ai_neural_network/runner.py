@@ -27,6 +27,7 @@ class RunOptions:
     max_attempts: int = 3
     repair_rounds: int = 1
     gpu_busy: bool | None = None
+    rotate: int = 0  # auto: start this many places down the eligible list (a card that failed goes elsewhere next)
 
 
 def new_run_id() -> str:
@@ -164,7 +165,9 @@ def run_card(reg: Registry, card: TaskCard, worker_id: str | None = None, opts: 
     attempts: list[dict] = []
     env: Envelope | None = None
     cands = router.candidates(reg, card.capability, allow_claude=opts.allow_claude, gpu_busy=opts.gpu_busy)
-    for cand in [c for c in cands if c.eligible][: opts.max_attempts]:
+    eligible = [c for c in cands if c.eligible]
+    shift = opts.rotate % len(eligible) if eligible else 0
+    for cand in (eligible[shift:] + eligible[:shift])[: opts.max_attempts]:
         env = _with_repair(reg, card, run_once(reg, card, cand.worker, opts), opts)
         attempts.append({"worker": env.worker, "status": env.status, "reason": env.reason, "run_id": env.run_id})
         if env.status not in ("error", "timeout", "skipped"):

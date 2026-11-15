@@ -131,3 +131,13 @@ def test_job_order_demotes_a_model_that_keeps_failing(monkeypatch):
     assert slots._by_results("reason", ["a", "b"]) == ["a", "b"]  # other jobs keep their order
     monkeypatch.setattr(slots.ledger, "read", lambda: rows + [{"type": "job", "job": "quick", "tier": "a", "status": "ok"}])
     assert slots._by_results("quick", ["a", "b", "c"]) == ["a", "b", "c"]  # one success restores it
+
+
+def test_failed_card_rotates_to_the_next_harness(env, repo):
+    from ai_neural_network.card import TaskCard
+    from ai_neural_network.runner import RunOptions, run_card
+
+    reg = registry.load()
+    first = run_card(reg, TaskCard(goal="say hi", cwd=str(repo)), "auto", RunOptions())
+    second = run_card(reg, TaskCard(goal="say hi", cwd=str(repo)), "auto", RunOptions(rotate=1))
+    assert first.attempts[0]["worker"] != second.attempts[0]["worker"]
