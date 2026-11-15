@@ -33,3 +33,45 @@ skills:
     governs: [all]
     role: "Provider access map: every direct API tier, CLI/subscription route and catalog-only provider, with key_env, endpoint rules and fallbacks. See docs/PROVIDERS.md."
     level: full
+
+# Skill library: Ultron does not vendor the machine's skills (450 on the home box, many third-party or
+# private). Worker prompts get the paths of the skills whose topic matches the task, plus the files in
+# `always`. Install skills with skills.sh (`npx skills add <owner/repo>`); add them to a topic here.
+# Override the folder with ULTRON_SKILLS_DIR. A missing skill or library is skipped.
+library: C:\AI\.agents\skills
+always:
+  - C:\AI\docs\tools.md   # machine tool registry: every installed tool, runtime and model
+topics:
+  world-3d:
+    match: [world, blender, " kit", render, terrain, globe, "3d", model, asset, mesh, glb, prop]
+    skills: [world-builder, blender, blender-environment-kits, blender-asset-qa, asset-library, create-3d-model,
+             free-3d-models, cc0-assets, 3d-resources, awesome-3d-model-tools, scenario-blender-expert]
+  animation:
+    match: [animation, mocap, retarget, " rig", motion, pose, skeleton]
+    skills: [blender-animation, mesh2motion, kimodo, animation-datasets, scenario-blender-rigging,
+             desktop-character-animation]
+  cinema:
+    match: [film, " shot", camera, cinema, video, trailer, previz, storyboard, cutscene]
+    skills: [cinema-studio, studio-cinematographer, blender-camera, video-production, scene-node, minimax-h3,
+             h3-prompt-writing, studio-showrunner, studio-qc-editorial, film-engine]
+  fiction:
+    match: [story, novel, fiction, chapter, screenplay, script, dialogue, prose, lore, canon]
+    skills: [story, story-long-write, story-short-write, story-review, story-deslop, humanizer,
+             studio-screenwriter, interactive-fiction, dialogue-systems]
+  audio:
+    match: [music, song, " tts", voice, speech, narration, audio, sound]
+    skills: [minimax-music-gen, minimax-multimodal-toolkit, minimax-music-playlist, tts, audio-production,
+             studio-audio-director, audio-design]
+  image:
+    match: [image, sprite, character sheet, texture, comfyui, concept art, reference]
+    skills: [comfyui-ops, qwen-image-2.1, character-builder, reference-angle, civitai, vision-analysis,
+             game-art-direction]
+  documents:
+    match: [readme, ".md", document, report, write-up, docx, pdf, slides, spreadsheet]
+    skills: [humanizer, caveman, minimax-docx, minimax-pdf, minimax-xlsx, pptx-generator]
+  code:
+    match: [code, test, bug, refactor, fix, implement, lint]
+    skills: [ponytail, systematic-debugging, clean-code, verification-before-completion, safe-refactor, python]
+  ai-systems:
+    match: [ultron, openhuman, strata, provider, model tier, harness, agent]
+    skills: [ultron, ai-model-matrix, openhuman, strata, skills-cli, find-skills]

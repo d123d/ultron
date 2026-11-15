@@ -75,3 +75,15 @@ def test_redact_covers_the_secrets_file(tmp_path, monkeypatch):
     monkeypatch.setattr(procs.Path, "home", lambda: tmp_path)
     assert procs.redact("error: key abcd1234efgh5678 rejected") == "error: key [REDACTED] rejected"
     assert procs.redact("us-east-1-region") == "us-east-1-region"
+
+
+def test_worker_prompt_lists_matching_skills(tmp_path, monkeypatch):
+    from ai_neural_network.card import TaskCard, render_prompt
+
+    (tmp_path / "blender").mkdir()
+    (tmp_path / "blender" / "SKILL.md").write_text("x", encoding="utf-8")
+    monkeypatch.setenv("ULTRON_SKILLS_DIR", str(tmp_path))
+    prompt = render_prompt(TaskCard(goal="Render the Blender kit"), None)
+    assert str(tmp_path / "blender" / "SKILL.md") in prompt  # installed + topic matches
+    assert "world-builder" not in prompt  # topic matches but not installed here: skipped
+    assert "SKILLS" not in render_prompt(TaskCard(goal="say hello"), None)

@@ -74,7 +74,7 @@ def render_prompt(card: TaskCard, worker: Worker) -> str:
     del worker
     scope = f" and touch only: {', '.join(card.paths)}" if card.paths else ""
     lines = [
-        "You are a worker in the AI Fleet on Dustin's Windows workstation, operated headlessly by another agent.",
+        "You are a worker for Ultron on this Windows workstation, operated headlessly by another agent.",
         f"Rules: nobody will answer questions, so decide and state assumptions. Work only in {card.cwd}{scope}.",
         "Never print secrets. Never kill processes you did not start. Never delete files permanently.",
         "Follow Ponytail ultra: the best code is never written. Question any part the need does not justify; smallest "
@@ -96,5 +96,31 @@ def render_prompt(card: TaskCard, worker: Worker) -> str:
         lines.extend(["CONTEXT FILES (read them first):", *[f"- {item}" for item in card.context_files]])
     if card.done_when:
         lines.extend(["DONE WHEN these commands succeed:", *[f"- {item}" for item in card.done_when]])
+    if skills := skills_for(card.goal):
+        lines.extend(["SKILLS (how this machine does this kind of work; read the ones that fit before you start):",
+                      *[f"- {p}" for p in skills]])
     return "\n".join(lines) + "\n"
+
+
+def skills_for(text: str, limit: int = 10) -> list[str]:
+    """Skill files (and the machine tool registry) whose topic keywords appear in the task text.
+
+    config/skills.yaml maps topics to skills; the skills themselves live in the machine's skill library
+    (ULTRON_SKILLS_DIR or `library:`), not in this repo. Missing library or skill: silently skipped.
+    """
+    from .paths import config_dir
+
+    try:
+        cfg = yaml.safe_load((config_dir() / "skills.yaml").read_text(encoding="utf-8")) or {}
+    except OSError:
+        return []
+    library = Path(os.environ.get("ULTRON_SKILLS_DIR") or cfg.get("library") or "")
+    low = text.lower()
+    names: list[str] = []
+    for topic in (cfg.get("topics") or {}).values():
+        if any(k in low for k in topic.get("match", [])):
+            names += [n for n in topic.get("skills", []) if n not in names]
+    paths = [str(p) for n in names if (p := library / n / "SKILL.md").is_file()][:limit]
+    always = [a for a in cfg.get("always", []) if Path(a).is_file()] if paths else []
+    return always + paths
 
