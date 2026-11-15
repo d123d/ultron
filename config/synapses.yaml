@@ -109,3 +109,12 @@ synapses:
   - {from: main,      to: deepinfra-api,   weight: 0.4}
   - {from: openai-api, to: opencode,       weight: 0.4}
   - {from: anthropic-api, to: muse-code,   weight: 0.4}
+
+  # pathways added 2026-11-14 (Ultron v0.4.0): adapter + embedding neurons
+  - {from: main,      to: azure-api,       weight: 0.4}
+  - {from: main,      to: bedrock-api,     weight: 0.4}
+  - {from: agy,       to: vertex-api,      weight: 0.5}
+  - {from: main,      to: cloudflare-api,  weight: 0.4}
+  - {from: utility,   to: openai-embed,    weight: 0.5}
+  - {from: utility,   to: gemini-embed,    weight: 0.4}
+  - {from: openai-embed, to: utility,      weight: 0.4}
