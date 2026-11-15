@@ -56,6 +56,6 @@ def test_sleep_prunes_faded_synapses(tmp_path):
     n = net()
     edge = next(e for e, w in n.synapses.items() if w > 0)
     n.synapses[edge] = 0.055
-    out = n.sleep(decay=0.01, prune_below=0.05)
+    out = n.sleep(decay=0.01, prune_below=0.05, save_path=tmp_path / "weights.json")  # never erode the real weights.json
     assert n.synapses[edge] == 0.0
     assert f"{edge[0]}->{edge[1]}" in out["pruned"]
