@@ -102,3 +102,34 @@ Failover carried every card without an operator. Pi now goes ahead of OpenCode f
 Each failed try is ledgered (`job-try`). A model whose last three tries at a job all failed moves to the back of that job's list; it is still tried last, and one success restores its place. The hand-set order in `config/jobs.yaml` stays the prior.
 
 Live-verified 2026-11-15: MCP server (11 tools; `brain_job` and `brain_slots` answered), OpenHuman worker round trip (`job unattended` returned through the card queue). Not verified: `private` job (local model was not loaded).
+
+## What the first real job taught (world-building cards, 2026-11-14/15)
+
+Verdict: the free coding harnesses are not fit for 3D scene work. Of 27 cards, the ones that passed
+by a human look were data and tooling work (catalog fixes, motion check sheets, a globe from
+existing data, terrain tiles). Scene kits (underground colony, space elevator) came back as grey
+primitives or black frames even after repair rounds, and were judged below previz grade. 3D building
+went back to sighted operator sessions. Use Ultron for text, code, data and review jobs, and for
+`qc` as a second pair of eyes.
+
+Defects this exposed in Ultron, all fixed:
+- A worker out of model quota exited 0 after 30 s of "Retrying..." with nothing done. That counted
+  as the card failing, so nine cards used their three tries in 45 minutes. Now: no file change and
+  no `FLEET_RESULT` is a worker error; the worker cools down and the next harness takes the card.
+- A failed card went back to the harness that had just failed it. Now it rotates.
+- "A commit exists" was the only check on render cards. Now `ultron qc`.
+- The OpenHuman worker depends on OpenHuman's handoff dispatcher (a cron row). That cron was removed
+  on 2026-11-15, so the worker is disabled until it is restored.
+
+## Model slots: top and cheap (2026-11-15)
+
+Each provider has two named model slots in `config/provider_slots.yaml`: `top` (its strongest model)
+and `cheap` (its free or cheapest one), with Artificial Analysis Intelligence Index scores.
+`--tier "<provider>:top"` or `:cheap` calls one. `*:top` and `*:cheap` expand to every usable
+provider's slot, best score first; usable means free or flat rate with its key present, never
+metered money or Claude/ChatGPT quota. Ask jobs end in `*:cheap`, and reason, plan, research, leader
+and best end in `*:top`, so a job keeps working while any provider answers.
+
+Agent cards: `max_attempts` 0 means every eligible harness gets a turn. A harness that stops partway
+(error, timeout, quota) after changing files hands its tree to the next one, which continues
+instead of starting over.

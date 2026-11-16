@@ -147,10 +147,9 @@ def test_worker_that_did_nothing_is_an_error_not_a_failed_card(env, repo):
     from ai_neural_network import health
     from ai_neural_network.card import TaskCard
     from ai_neural_network.runner import RunOptions, run_card
-    from tests.conftest import HELLO_CHECK
 
     reg = registry.load()
-    card = TaskCard(goal="write hello", cwd=str(repo), done_when=[HELLO_CHECK], capability="stall")
+    card = TaskCard(goal="write hello", cwd=str(repo), done_when=['python -c "import sys; sys.exit(1)"'], capability="stall")
     stalled = run_card(reg, card, "fake-stall", RunOptions())
     assert stalled.status == "error" and "did no work" in stalled.reason and health.in_cooldown("fake-stall")
 
