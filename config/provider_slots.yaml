@@ -1,0 +1,38 @@
+# Two model slots per provider: `top` (strongest model it serves) and `cheap` (free or cheapest good one).
+# Use them anywhere a tier is accepted: `nvidia:top`, `openrouter:cheap`; `*:top` / `*:cheap` = every
+# usable free/flat provider's slot, best score first (job lists end with these so work never runs dry).
+# A value is a model id on that provider, or a registry tier id (CLI/subscription providers).
+# A provider not listed here uses its first tier for both slots.
+# Scores: Artificial Analysis Intelligence Index, snapshot 2026-11-12
+#   https://modelcap.ai/benchmarks/aa-intelligence-index
+#   https://www.benchleader.com/benchmarks/aa_intelligence_index_v5
+# <kind>_cost: metered = that slot spends money although the provider has free models; never in *:top/*:cheap.
+# 0 = not scored there (ranked last within its cost class).
+providers:
+  anthropic:    {top: claude-fable-5-2, top_score: 64.6, cheap: claude-haiku-5-5, cheap_score: 36.5}
+  openai:       {top: gpt-6-astra, top_score: 56.9, cheap: gpt-6-luna, cheap_score: 27.9}
+  google:       {top: gemini-4-carbon, top_score: 60.0, cheap: gemini-3.8-flash, cheap_score: 30.8}
+  xai:          {top: grok-4.7, top_score: 35.5, cheap: grok-4.7, cheap_score: 35.5}
+  meta:         {top: muse-wonder-1.0, top_score: 43.6, cheap: muse-spark-1.3-contributor, cheap_score: 36.6}
+  moonshotai:   {top: kimi-k3.1-pro, top_score: 46.5, cheap: kimi-k3.1-pro, cheap_score: 46.5}
+  deepseek:     {top: deepseek-flash, top_score: 32.6, cheap: deepseek-flash, cheap_score: 32.6}
+  minimax:      {top: MiniMax-M3.1-Flash, top_score: 29.1, cheap: MiniMax-M3, cheap_score: 18.9}
+  mistral:      {top: mistral-large-latest, top_score: 0, cheap: mistral-small-latest, cheap_score: 4.3}
+  cohere:       {top: command-a-plus-05-2026, top_score: 6.2, cheap: command-a-plus-05-2026, cheap_score: 6.2}
+  groq:         {top: qwen/qwen3.8-27b, top_score: 20.1, cheap: openai/gpt-oss-120b, cheap_score: 3.8}
+  cerebras:     {top: qwen-3.8-27b, top_score: 20.1, cheap: gpt-oss-120b, cheap_score: 3.8}
+  sambanova:    {top: GLM-5.3, top_score: 31.7, cheap: MiniMax-M3.1-Flash, cheap_score: 29.1}
+  togetherai:   {top: moonshotai/Kimi-K3.1-Pro, top_score: 46.5, cheap: openai/gpt-oss-120b, cheap_score: 3.8}
+  deepinfra:    {top: moonshotai/Kimi-K3.1-Pro, top_score: 46.5, cheap: deepseek-ai/DeepSeek-V4.1-Flash-1017, cheap_score: 32.6}
+  fireworks-ai: {top: accounts/fireworks/models/kimi-k3p1-pro, top_score: 46.5, cheap: accounts/fireworks/models/deepseek-v4p1-flash-1017, cheap_score: 32.6}
+  huggingface:  {top: moonshotai/Kimi-K3.1-Pro, top_score: 46.5, cheap: deepseek-ai/DeepSeek-V4.1-Flash-1017, cheap_score: 32.6}
+  openrouter:   {top: anthropic/claude-fable-5.2, top_score: 64.6, top_cost: metered, cheap: nvidia/nemotron-3-ultra-550b-a55b:free, cheap_score: 0}
+  nvidia:       {top: deepseek-ai/deepseek-v4.1-flash, top_score: 32.6, cheap: minimaxai/minimax-m3.1-flash, cheap_score: 29.1}
+  ollama-cloud: {top: kimi-k3.1-pro, top_score: 46.5, cheap: deepseek-v4.1-flash:1017, cheap_score: 32.6}
+  opencode-go:  {top: kimi-k3.1-pro, top_score: 46.5, cheap: deepseek-v4.1-flash, cheap_score: 32.6}
+  zen-bridge:   {top: deepseek-v4.1-flash-free, top_score: 32.6, cheap: mimo-v2.6-flash-free, cheap_score: 26.7}
+  opencode:     {top: claude-fable-5-2, top_score: 64.6, cheap: muse-ember-1.0, cheap_score: 36.0}
+  claude:       {top: best, top_score: 59.1, cheap: claude-leader, cheap_score: 54.5}
+  codex:        {top: gpt, top_score: 56.9, cheap: codex-leader, cheap_score: 54.6}
+  agy:          {top: gemini-argon, top_score: 50.4, cheap: gemini, cheap_score: 30.8}
+  strata:       {top: strata, top_score: 0, cheap: local, cheap_score: 0}

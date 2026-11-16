@@ -35,5 +35,7 @@ elif mode == "half":  # wrong first try; fixes it when handed the failing checks
 elif mode == "cheat":  # passes by gutting the existing test its check runs
     (cwd / "tests" / "test_hello.py").write_text("def test_hello():\n    pass\n", encoding="utf-8")
     result("done", "fixed", ["tests/test_hello.py"])
+elif mode == "stall":  # model quota gone: the harness prints retries and exits 0 with nothing done
+    print("Retrying (attempt 3/3, waiting 8s)...Retry finished, resuming.")
 elif mode == "silent":
     pass

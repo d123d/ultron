@@ -55,7 +55,50 @@ def provider_slots(reg: Registry) -> list[dict[str, Any]]:
         s["models"] += [m for m in (live.get(name) or {}).get("models", []) if m not in s["models"]]
         s["n_models"] = len(s["models"])
         s["cooled"] = [t for t in s["tiers"] if health.in_cooldown(t)]
+        s["top"], s["cheap"] = model_slot(reg, name, "top"), model_slot(reg, name, "cheap")
     return list(slots.values())
+
+
+SLOT_KINDS = ("top", "cheap")
+
+
+def _slot_table() -> dict[str, dict[str, Any]]:
+    try:
+        return (yaml.safe_load((config_dir() / "provider_slots.yaml").read_text(encoding="utf-8")) or {}).get("providers") or {}
+    except OSError:
+        return {}
+
+
+def model_slot(reg: Registry, provider: str, kind: str) -> str:
+    """The tier spec for a provider's `top` or `cheap` model slot: a registry tier id or `provider:model`."""
+    base = next((t for t in reg.tiers.values() if provider_name(t) == provider), None)
+    if base is None:
+        raise FleetError(f"unknown provider {provider!r}")
+    value = (_slot_table().get(provider) or {}).get(kind) or base.id
+    return value if value in reg.tiers else f"{provider}:{value}"
+
+
+def expand_slots(reg: Registry, kind: str) -> list[str]:
+    """`*:top` / `*:cheap`: every usable provider's slot, best score first. Usable = free or flat rate (never
+    metered money or Claude/ChatGPT quota) and its key present; the free tier wins a score tie."""
+    table, rows = _slot_table(), []
+    for prov in dict.fromkeys(provider_name(t) for t in reg.tiers.values()):
+        base = next(t for t in reg.tiers.values() if provider_name(t) == prov)
+        if base.cost not in ("free", "flat") or (base.key_env and not _secret_or_none(base.key_env)):
+            continue
+        if (table.get(prov) or {}).get(f"{kind}_cost") == "metered":
+            continue
+        score = float((table.get(prov) or {}).get(f"{kind}_score") or 0)
+        rows.append((-score, base.cost != "free", prov))
+    return list(dict.fromkeys(model_slot(reg, prov, kind) for *_, prov in sorted(rows)))
+
+
+def job_specs(reg: Registry, tiers: list[str]) -> list[str]:
+    """A job's model list with `*:top` / `*:cheap` expanded, duplicates dropped (first place wins)."""
+    out: list[str] = []
+    for spec in tiers:
+        out += expand_slots(reg, spec[2:]) if spec in ("*:top", "*:cheap") else [spec]
+    return list(dict.fromkeys(out))
 
 
 def harness_slots(reg: Registry) -> list[dict[str, Any]]:
@@ -110,7 +153,7 @@ def check_jobs(reg: Registry) -> list[str]:
 
     bad = []
     for kind, job in load_jobs().items():
-        for spec in job.get("tiers") or []:
+        for spec in job_specs(reg, job.get("tiers") or []):
             try:
                 candidates(reg, spec + ",")
             except FleetError as e:
@@ -157,13 +200,13 @@ def run_job(reg: Registry, kind: str, prompt: str, *, cwd: str | None = None, do
         return done(env.status, env.worker, text=env.summary, reason=env.reason, files_changed=env.files_changed,
                     log=str(env.log_dir))
     if mode == "vote":
-        r = vote(reg, ",".join(job["tiers"]), prompt, system=system, files=files, timeout_s=timeout_s)
+        r = vote(reg, ",".join(job_specs(reg, job["tiers"])), prompt, system=system, files=files, timeout_s=timeout_s)
         return done("ok", r.tier, text=r.data["answer"], votes=r.data["votes"])
     errors = []
     if job.get("private"):
         r = ask(reg, "local", prompt, system=system, files=files, timeout_s=timeout_s, private=True)
         return done("ok", r.tier, text=r.text, model=r.model)
-    for spec in _by_results(kind, job["tiers"]):
+    for spec in _by_results(kind, job_specs(reg, job["tiers"])):
         try:  # "spec," = this model alone: the job's own list is the fallback order
             r = ask(reg, spec + ",", prompt, system=system, files=files, images=images, timeout_s=timeout_s)
             return done("ok", r.tier, text=r.text, model=r.model, duration_s=r.duration_s, skipped=errors)

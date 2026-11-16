@@ -24,7 +24,7 @@ class RunOptions:
     budget_usd: float = 1.0
     timeout_s: int | None = None
     worktree: bool | None = None
-    max_attempts: int = 3
+    max_attempts: int = 0  # 0 = every eligible worker in turn (work keeps going while any harness answers)
     repair_rounds: int = 1
     gpu_busy: bool | None = None
     rotate: int = 0  # auto: start this many places down the eligible list (a card that failed goes elsewhere next)
@@ -97,6 +97,8 @@ def run_once(reg: Registry, card: TaskCard, worker_id: str, opts: RunOptions) ->
                   summary=str(result.get("summary") or parsed.reply[-300:]).strip(), worktree=wt_info)
 
     quota = health.detect_quota("\n".join([parsed.reply, proc.stderr, parsed.error or ""]), worker.quota_patterns)
+    if proc.timed_out or quota:  # partial work a stopped worker leaves behind is handed to the next one
+        env.files_changed, env.diffstat = diff_since(snap)
     if proc.timed_out:
         env.status, env.reason = "timeout", f"no result within {timeout}s; process tree killed"
         health.record_error(worker.id, env.reason)
@@ -113,6 +115,12 @@ def run_once(reg: Registry, card: TaskCard, worker_id: str, opts: RunOptions) ->
         if not parsed.reply.strip() and not files:
             env.status, env.reason = "error", "empty reply and no file changes"
             health.record_error(worker.id, env.reason)
+        elif env.verify["ran"] and not env.verify["passed"] and not files and not result:
+            # No file change and no FLEET_RESULT: the worker never worked. Pi, out of model quota, printed
+            # "Retrying..." for 30 s and exited 0; that counted as the card failing and parked nine cards in
+            # 45 minutes (2026-11-15). An error cools the worker and lets the next harness take the card.
+            env.status, env.reason = "error", "worker did no work (no file change, no FLEET_RESULT)"
+            health.set_cooldown(worker.id, worker.cooldown_s, env.reason)
         elif env.verify["ran"] and not env.verify["passed"]:
             failed = [r["cmd"] for r in env.verify["results"] if r["rc"] != 0]
             env.status, env.reason = "failed", f"done_when failed: {failed[0]}"
@@ -147,6 +155,16 @@ def repair_card(card: TaskCard, env: Envelope) -> TaskCard:
     return replace(card, goal=goal, cwd=cwd, worktree=False)
 
 
+def continue_card(card: TaskCard, env: Envelope) -> TaskCard:
+    """Hand-over card: a worker stopped partway (error/timeout) after changing files; the next worker carries on
+    in the same tree instead of starting over."""
+    cwd = env.worktree["path"] if env.worktree else card.cwd
+    goal = (f"{card.goal}\n\nCONTINUE: a previous agent ({env.worker}) stopped partway ({env.reason[:300]}). "
+            f"Its changes are already in this tree ({', '.join(env.files_changed[:20])}). Check them, keep what is "
+            f"right and finish the goal.")
+    return replace(card, goal=goal, cwd=cwd, worktree=False)
+
+
 def _with_repair(reg: Registry, card: TaskCard, env: Envelope, opts: RunOptions) -> Envelope:
     for _ in range(opts.repair_rounds):
         # a refuted run must not be repaired: the next round's snapshot would hide the edited check
@@ -167,11 +185,14 @@ def run_card(reg: Registry, card: TaskCard, worker_id: str | None = None, opts: 
     cands = router.candidates(reg, card.capability, allow_claude=opts.allow_claude, gpu_busy=opts.gpu_busy)
     eligible = [c for c in cands if c.eligible]
     shift = opts.rotate % len(eligible) if eligible else 0
-    for cand in (eligible[shift:] + eligible[:shift])[: opts.max_attempts]:
-        env = _with_repair(reg, card, run_once(reg, card, cand.worker, opts), opts)
+    work = card
+    for cand in (eligible[shift:] + eligible[:shift])[: opts.max_attempts or None]:
+        env = _with_repair(reg, work, run_once(reg, work, cand.worker, opts), opts)
         attempts.append({"worker": env.worker, "status": env.status, "reason": env.reason, "run_id": env.run_id})
         if env.status not in ("error", "timeout", "skipped"):
             break
+        if env.files_changed and env.status in ("error", "timeout"):
+            work = continue_card(card, env)  # next harness picks up the partial work, not a blank tree
     if env is None:
         reasons = "; ".join(f"{c.worker}: {c.reason}" for c in cands)
         raise FleetError(f"no eligible worker for {card.capability}: {reasons}")

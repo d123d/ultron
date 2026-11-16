@@ -141,3 +141,38 @@ def test_failed_card_rotates_to_the_next_harness(env, repo):
     first = run_card(reg, TaskCard(goal="say hi", cwd=str(repo)), "auto", RunOptions())
     second = run_card(reg, TaskCard(goal="say hi", cwd=str(repo)), "auto", RunOptions(rotate=1))
     assert first.attempts[0]["worker"] != second.attempts[0]["worker"]
+
+
+def test_worker_that_did_nothing_is_an_error_not_a_failed_card(env, repo):
+    from ai_neural_network import health
+    from ai_neural_network.card import TaskCard
+    from ai_neural_network.runner import RunOptions, run_card
+    from tests.conftest import HELLO_CHECK
+
+    reg = registry.load()
+    card = TaskCard(goal="write hello", cwd=str(repo), done_when=[HELLO_CHECK], capability="stall")
+    stalled = run_card(reg, card, "fake-stall", RunOptions())
+    assert stalled.status == "error" and "did no work" in stalled.reason and health.in_cooldown("fake-stall")
+
+def test_provider_model_slots_top_and_cheap(monkeypatch):
+    reg = registry.load()
+    assert slots.model_slot(reg, "nvidia", "top").startswith("nvidia:")
+    assert slots.model_slot(reg, "claude", "top") in reg.tiers  # CLI provider slots name a tier
+    assert candidates(reg, "nvidia:cheap,")[0].startswith("nvidia:")
+    monkeypatch.setattr(slots, "_secret_or_none", lambda k: "x")
+    top = slots.expand_slots(reg, "top")
+    assert top and len(top) == len(set(top))
+    assert not any(t.startswith("openrouter:anthropic/") for t in top)  # metered slot never in *:top
+    assert all(reg.tiers[t].cost in ("free", "flat") for t in candidates(reg, ",".join(top) + ","))
+    assert slots.job_specs(reg, ["nim-ultra", "*:cheap"])[0] == "nim-ultra"
+
+
+def test_stopped_worker_hands_partial_work_to_the_next():
+    from ai_neural_network.card import TaskCard
+    from ai_neural_network.envelope import Envelope
+    from ai_neural_network.runner import continue_card
+
+    env = Envelope.__new__(Envelope)
+    env.worker, env.reason, env.files_changed, env.worktree = "pi", "timeout", ["a.py"], {"path": "/wt/1"}
+    nxt = continue_card(TaskCard(goal="build it", cwd="/repo"), env)
+    assert nxt.cwd == "/wt/1" and not nxt.worktree and "CONTINUE" in nxt.goal and "a.py" in nxt.goal

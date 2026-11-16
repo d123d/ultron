@@ -37,6 +37,7 @@ def env(tmp_path, monkeypatch):
             "fake-echo": fake("echo"),
             "fake-half": fake("half"),
             "fake-silent": fake("silent"),
+            "fake-stall": fake("stall", rank=99, capabilities=["stall"]),
             "fake-cheat": fake("cheat"),
             "fake-gpu": fake("ok", resources=["gpu"], rank=5),
             "fake-off": fake("ok", enabled=False),

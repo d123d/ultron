@@ -353,6 +353,15 @@ def candidates(reg: Registry, tier_spec: str) -> list[str]:
         free = [t for t in reg.tiers if reg.tiers[t].cost in ("free", "flat") and not reg.tiers[t].cli]
         return sorted(free, key=lambda t: (rank.get(reg.tiers[t].cost, 99), t))
     ids = list(dict.fromkeys(s.strip() for s in tier_spec.split(",") if s.strip())) if "," in tier_spec else [tier_spec]
+    if any(s.partition(":")[2] in ("top", "cheap") for s in ids):  # provider model slots (config/provider_slots.yaml)
+        from .slots import expand_slots, model_slot
+
+        ids = list(dict.fromkeys(x for s in ids for x in (
+            expand_slots(reg, s[2:]) if s in ("*:top", "*:cheap")
+            else [model_slot(reg, s.partition(":")[0], s.partition(":")[2])] if s.partition(":")[2] in ("top", "cheap")
+            else [s])))
+        if len(ids) > 1 and "," not in tier_spec:
+            tier_spec += ","  # an expanded slot list keeps its own order and fallbacks
     for spec in ids:  # "provider:model": any model in that provider's slot, as a one-off tier
         prov, _, model = spec.partition(":")
         base = next((t for t in reg.tiers.values() if provider_name(t) == prov), None)

@@ -2,26 +2,28 @@
 # `brain job <kind> "<prompt>"` tries them in order; a failed, capped or cooled model falls through.
 # A tier entry is a registry tier id, or `provider:model` for any model in that provider's slot
 # (`brain slots --models <provider>`). mode: ask (default) | vote | run (agent harness in a repo).
+# A list ending in "*:top" / "*:cheap" falls through to every usable provider's model slot
+# (config/provider_slots.yaml, best score first), so a job keeps working while any provider answers.
 # Free and flat-rate models come first; metered/Claude-quota models only where the job needs them.
 jobs:
   quick:
     note: short answers, classification, glue. Fastest free models.
     # live 2026-11-14: nim-mistral 0.9 s. Ollama Cloud (utility) answered 402 on every model that day, so it
     # sits behind NIM. Cerebras (402 no credits) and SambaNova (401 bad key) are left out until re-keyed.
-    tiers: [nim-mistral, nim-minimax, utility, zen, go-pro]
+    tiers: [nim-mistral, nim-minimax, utility, zen, go-pro, "*:cheap"]
   bulk:
     note: many cheap text jobs (summaries, rewrites, extraction). Spread across free providers.
-    tiers: [nim-minimax, zen, zen-deepseek, nim-mistral, utility, openrouter-gemma]
+    tiers: [nim-minimax, zen, zen-deepseek, nim-mistral, utility, openrouter-gemma, "*:cheap"]
   extract:
     note: structured JSON output from text.
-    tiers: [nim-mistral, go-pro, utility, zen-glm]
+    tiers: [nim-mistral, go-pro, utility, zen-glm, "*:cheap"]
   reason:
     note: hard single-step reasoning, maths, design trade-offs.
-    tiers: [nim-ultra, main, gemini-argon, codex-leader, nim-glm]
+    tiers: [nim-ultra, main, gemini-argon, codex-leader, nim-glm, "*:top", "*:cheap"]
     timeout_s: 300
   plan:
     note: plans and task breakdowns for the coding harnesses.
-    tiers: [gemini-argon, nim-ultra, main, codex-leader, go-pro]
+    tiers: [gemini-argon, nim-ultra, main, codex-leader, go-pro, "*:top", "*:cheap"]
     timeout_s: 300
   verify:
     note: independent answers from three providers, majority wins.
@@ -33,21 +35,21 @@ jobs:
     timeout_s: 240
   research:
     note: synthesis over long context (1M-context free models first).
-    tiers: [openrouter-ultra, nim-ultra, gemini, utility]
+    tiers: [openrouter-ultra, nim-ultra, gemini, utility, "*:top", "*:cheap"]
     timeout_s: 300
   draft:
     note: creative and communication drafting.
-    tiers: [muse, nim-mistral, go-pro, zen]
+    tiers: [muse, nim-mistral, go-pro, zen, "*:cheap"]
   private:
     note: nothing leaves this PC (local Strata only; fails while Strata is unloaded).
     private: true
     tiers: [strata]
   leader:
     note: executive review and directives (subscription models, low effort).
-    tiers: [claude-leader, codex-leader, gemini-argon, github-leader, go-pro, nim-ultra]
+    tiers: [claude-leader, codex-leader, gemini-argon, github-leader, go-pro, nim-ultra, "*:top"]
   best:
     note: strongest reachable model. Spends Claude/ChatGPT subscription quota; name it deliberately.
-    tiers: [best, gpt, agy-opus, gemini-argon, nim-ultra]
+    tiers: [best, gpt, agy-opus, gemini-argon, nim-ultra, "*:top"]
     timeout_s: 600
   code:
     note: write or change code in a repo (agent harness, verified by done-when checks).

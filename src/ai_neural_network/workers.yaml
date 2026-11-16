@@ -157,6 +157,7 @@ workers:
   openhuman:
     kind: agent
     control: command
+    enabled: false  # 2026-11-15: OpenHuman cron was purged and the handoff dispatcher was removed with it, so queued cards never run. Round trip worked that morning. Re-enable after `oh_jobs.py ensure` restores the dispatcher.
     cost: flat
     rank: 45
     capabilities:
