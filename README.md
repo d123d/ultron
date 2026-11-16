@@ -101,6 +101,6 @@ quirks: [docs/PROVIDER-BEST-PRACTICES.md](docs/PROVIDER-BEST-PRACTICES.md).
 - Built and tested on one Windows 11 workstation; CI runs the tests on Linux. Paths in
   `workers.yaml`, `config/skills.yaml` and the board settings point at that machine: edit them.
 - Job-slot model order is hand-set from live measurements, not learned yet.
-- Health state is safe across threads, not across processes.
+- Health state is safe across threads and processes (file lock around `health.json`).
 
 MIT licence.
