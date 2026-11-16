@@ -1,0 +1,2 @@
+# Fake fixture value (abcd...5678) in an old test commit, not a credential.
+1537b2c76a4226b0d5476323bbd61048f68b3499:tests/test_slots.py:generic-api-key:74
