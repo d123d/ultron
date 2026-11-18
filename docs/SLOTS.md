@@ -11,6 +11,10 @@ which tiers sit in it and how many models it serves.
 - `brain slots --models nvidia` prints every model of one provider.
 - Any listed model is usable without a registry entry: `brain ask "..." --tier "nvidia:<model id>,"`.
   The one-off tier inherits the provider's endpoint, key, throttle and cost.
+- Two model slots per provider: `provider:top` (strongest model it serves) and
+  `provider:cheap` (free or cheapest good one), from `config/provider_slots.yaml` —
+  e.g. `brain ask "..." --tier "nvidia:top,"`. `*:top` / `*:cheap` expand to every
+  usable provider's slot, best score first.
 - A tier's provider is its `cli`, else a known local port (Strata :47831, model-gate :8790,
   Zen bridge :4097), else its `catalog` id. A new provider gets a slot by adding one tier.
 
