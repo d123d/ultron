@@ -22,7 +22,7 @@
 | done-when / verify | cerebellum check -> learning signal | cerebellum |
 | ledger | episode record; weights are consolidated memory | hippocampus |
 | doctor / health | brainstem homeostasis | brainstem |
-| fleet CLI | `neuro` CLI: status / excite / learn | — |
+| fleet CLI | `ultron` / `brain` CLI: status / excite / learn | — |
 
 ## Added 2026-11-14 (Ultron review)
 
@@ -31,7 +31,7 @@
 | muse-code worker (muse CLI) | neuron `muse-code` | prefrontal — now executable, was trace-only |
 | openhuman worker | neuron `openhuman` | memory — now executable, was trace-only |
 | strata tier (tiny/local aliases) | neuron `strata` | sensory — now executable, was trace-only |
-| 16 direct cloud API tiers (OpenAI, Anthropic, Mistral, Cohere, Groq, Cerebras, Together, Fireworks, DeepInfra, SambaNova, DeepSeek, xAI, Perplexity, Moonshot, MiniMax, Hugging Face) | neurons `*-api` | association / memory / prefrontal — see docs/PROVIDERS.md |
+| 21 direct cloud API tiers (OpenRouter, OpenAI, Anthropic, Google AI Studio, NVIDIA NIM, Ollama Cloud, Mistral, Cohere, Groq, Cerebras, Together, Fireworks, DeepInfra, SambaNova, DeepSeek, xAI, Perplexity, Moonshot, MiniMax, Hugging Face, OpenCode Go) | neurons `*-api` (+ `nim-*`, `openrouter-*`, `ollama-cloud`, `gemini-api`, `go`) | association / memory / prefrontal — see docs/PROVIDERS.md |
 | cloud provider skills (openrouter-typescript-sdk, mmx-cli, cloud-providers) | skill layer | all regions |
 
 ## Added 2026-11-14 (Ultron v0.4.0 — all 9)
