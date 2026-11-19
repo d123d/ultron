@@ -313,3 +313,14 @@ def test_retry_at_claude_and_copilot_argv(monkeypatch):
     monkeypatch.setattr("shutil.which", lambda name: "C:/bin/copilot.exe")
     argv, stdin_text, _ = _cli_argv(reg.tiers["github-leader"], "hello", Path("."), [])
     assert argv == ["C:/bin/copilot.exe", "-p", "hello", "-s"] and stdin_text is None
+
+
+def test_version_matches_pyproject():
+    import tomllib
+
+    from ai_neural_network import __version__
+
+    root = Path(__file__).parents[1]
+    with open(root / "pyproject.toml", "rb") as fh:
+        declared = tomllib.load(fh)["project"]["version"]
+    assert __version__ == declared
