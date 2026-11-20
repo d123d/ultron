@@ -14,7 +14,7 @@ under the tier's `key_env` — never in this repo.
 | OpenAI | openai-api | api.openai.com/v1 | OPENAI_API_KEY | gpt-5.5 |
 | Anthropic | anthropic-api | api.anthropic.com/v1 (OpenAI-compat layer) | ANTHROPIC_API_KEY | claude-sonnet-5-5 |
 | Google AI Studio | gemini-api | generativelanguage.googleapis.com/v1beta/openai | GEMINI_API_KEY | gemini-3.8-flash |
-| NVIDIA NIM | nim-ultra, nim-mistral, nim-gemma, nim-vl, nim-minimax, nim-step, nim-glm, nim-lightning, vision, muse, meta | integrate.api.nvidia.com/v1 | NVIDIA_API_KEY | per-tier |
+| NVIDIA NIM | nim-ultra, nim-mistral, nim-gemma, nim-vl, nim-minimax, nim-step, nim-glm, nim-lightning, nim-deepseek, vision, muse, meta | integrate.api.nvidia.com/v1 | NVIDIA_API_KEY | per-tier |
 | Ollama Cloud | utility, ollama-cloud | ollama.com/v1 | OLLAMA_API_KEY | gpt-oss:120b |
 | Mistral AI | mistral-api | api.mistral.ai/v1 | MISTRAL_API_KEY | mistral-large-latest |
 | Cohere | cohere-api | api.cohere.com/compatibility/v1 | COHERE_API_KEY | command-a-03-2025 |
