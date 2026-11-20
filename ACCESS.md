@@ -1,6 +1,6 @@
 # Access Ultron: for agents
 
-**Repo: https://github.com/d123d/ultron** (public, MIT). Old links to `d123d/ai-neural-network`
+**Repo:** [d123d/ultron](https://github.com/d123d/ultron) (public, MIT). Old links to `d123d/ai-neural-network`
 redirect here.
 
 ## Connect
