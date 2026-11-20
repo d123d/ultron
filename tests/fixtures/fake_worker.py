@@ -1,4 +1,5 @@
 """Fake agent for tests. Usage: fake_worker.py <mode> <prompt_file> <cwd>"""
+
 import json
 import pathlib
 import sys

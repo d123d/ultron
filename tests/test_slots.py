@@ -1,4 +1,5 @@
 """Provider slots, job slots, ad-hoc provider:model tiers."""
+
 import pytest
 
 from ai_neural_network import registry, slots
@@ -95,9 +96,11 @@ def test_reclaim_reopens_cards_of_dead_worker_loops(monkeypatch):
     import socket
 
     host = socket.gethostname()
-    issues = [{"id": "a", "assignee": f"fleet-{host}-999999999"},      # dead pid: stuck card
-              {"id": "b", "assignee": f"fleet-{host}-{os.getpid()}"},   # live loop: leave it
-              {"id": "c", "assignee": "fleet-otherbox-1"}]              # another machine: not ours to judge
+    issues = [
+        {"id": "a", "assignee": f"fleet-{host}-999999999"},  # dead pid: stuck card
+        {"id": "b", "assignee": f"fleet-{host}-{os.getpid()}"},  # live loop: leave it
+        {"id": "c", "assignee": "fleet-otherbox-1"},
+    ]  # another machine: not ours to judge
 
     class FakeBoard:
         reopened: list = []
@@ -116,8 +119,13 @@ def test_qc_fails_on_bad_or_missing_renders(tmp_path, monkeypatch):
     assert slots.qc_images(reg, str(tmp_path))["ok"] is False  # no render at all is not a pass
     (tmp_path / "good.png").write_bytes(b"x")
     (tmp_path / "bad.png").write_bytes(b"x")
-    monkeypatch.setattr(slots, "run_job", lambda reg, kind, prompt, images, **kw: {
-        "text": "a dome\nVERDICT: PASS" if "good" in images[0] else "grey\nVERDICT: FAIL - flat colour"})
+    monkeypatch.setattr(
+        slots,
+        "run_job",
+        lambda reg, kind, prompt, images, **kw: {
+            "text": "a dome\nVERDICT: PASS" if "good" in images[0] else "grey\nVERDICT: FAIL - flat colour"
+        },
+    )
     out = slots.qc_images(reg, str(tmp_path))
     assert out["checked"] == 2 and out["ok"] is False
     (tmp_path / "bad.png").unlink()
@@ -152,6 +160,7 @@ def test_worker_that_did_nothing_is_an_error_not_a_failed_card(env, repo):
     card = TaskCard(goal="write hello", cwd=str(repo), done_when=['python -c "import sys; sys.exit(1)"'], capability="stall")
     stalled = run_card(reg, card, "fake-stall", RunOptions())
     assert stalled.status == "error" and "did no work" in stalled.reason and health.in_cooldown("fake-stall")
+
 
 def test_provider_model_slots_top_and_cheap(monkeypatch):
     reg = registry.load()

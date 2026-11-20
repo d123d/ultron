@@ -1,4 +1,5 @@
 """Per-worker health and quota cooldowns persisted in health.json."""
+
 from __future__ import annotations
 
 import json

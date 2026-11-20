@@ -1,4 +1,5 @@
 """Git snapshots so the fleet can report exactly which files a worker changed."""
+
 from __future__ import annotations
 
 import subprocess

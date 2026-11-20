@@ -1,4 +1,5 @@
 """Fleet Leader election, wakeup, and multi-channel agent communication (GitHub, Telegram, Muse, OpenHuman)."""
+
 from __future__ import annotations
 
 import json
@@ -96,8 +97,9 @@ def elect_leader(reg: Registry | None = None) -> dict[str, Any]:
     }
 
 
-def _dispatch_channel(channel: str, message: str, *, repo: str = "d123d/agent-comms",
-                      issue: int | None = None, title: str | None = None) -> list[dict[str, Any]]:
+def _dispatch_channel(
+    channel: str, message: str, *, repo: str = "d123d/agent-comms", issue: int | None = None, title: str | None = None
+) -> list[dict[str, Any]]:
     sent: list[dict[str, Any]] = []
     ch = (channel or "none").lower()
     if ch in ("", "none"):
@@ -105,14 +107,21 @@ def _dispatch_channel(channel: str, message: str, *, repo: str = "d123d/agent-co
     if ch in ("telegram", "both") or "telegram" in ch:
         sent.append(comm_message("telegram", message))
     if ch in ("github", "both") or "github" in ch:
-        sent.append(comm_message("github", message, repo=repo, issue=issue,
-                                 title=title or "Fleet Leader Update", labels=["fleet-leader"]))
+        sent.append(
+            comm_message("github", message, repo=repo, issue=issue, title=title or "Fleet Leader Update", labels=["fleet-leader"])
+        )
     return sent
 
 
-def wake_leader(report: str, *, system: str | None = None, channel: str = "none",
-                repo: str = "d123d/agent-comms", issue: int | None = None,
-                reg: Registry | None = None) -> dict[str, Any]:
+def wake_leader(
+    report: str,
+    *,
+    system: str | None = None,
+    channel: str = "none",
+    repo: str = "d123d/agent-comms",
+    issue: int | None = None,
+    reg: Registry | None = None,
+) -> dict[str, Any]:
     """Wake the highest-priority available Fleet Leader with a status report."""
     reg = reg or registry.load()
     election = elect_leader(reg)
@@ -145,8 +154,11 @@ def wake_leader(report: str, *, system: str | None = None, channel: str = "none"
     _save_leader_state({**payload, "reply_preview": result.text[:500]})
     if channel and channel.lower() != "none":
         payload["channels"] = _dispatch_channel(
-            channel, f"[Fleet Leader {result.tier} / {result.model}]\n{result.text[:1500]}",
-            repo=repo, issue=issue, title=f"Fleet Leader Report ({result.tier})",
+            channel,
+            f"[Fleet Leader {result.tier} / {result.model}]\n{result.text[:1500]}",
+            repo=repo,
+            issue=issue,
+            title=f"Fleet Leader Report ({result.tier})",
         )
     return payload
 
@@ -155,9 +167,18 @@ def _run_cmd(argv: list[str], *, timeout_s: int = 45) -> subprocess.CompletedPro
     return subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout_s)
 
 
-def comm_message(to: str, message: str = "", *, repo: str = "d123d/agent-comms", issue: int | None = None,
-                 title: str | None = None, labels: list[str] | None = None,
-                 read: bool = False, channel: str = "none", reg: Registry | None = None) -> dict[str, Any]:
+def comm_message(
+    to: str,
+    message: str = "",
+    *,
+    repo: str = "d123d/agent-comms",
+    issue: int | None = None,
+    title: str | None = None,
+    labels: list[str] | None = None,
+    read: bool = False,
+    channel: str = "none",
+    reg: Registry | None = None,
+) -> dict[str, Any]:
     """Send or read agent/leader messages across Muse, GitHub, Telegram, OpenHuman, or the elected Leader."""
     target = to.lower().strip()
     root = _ai_root()
@@ -169,14 +190,23 @@ def comm_message(to: str, message: str = "", *, repo: str = "d123d/agent-comms",
         if not message:
             raise FleetError("--message is required when talking to muse")
         reg = reg or registry.load()
-        res = ask_llm(reg, "muse", message,
-                      system="You are Muse, creative & strategic AI collaborator in AI Fleet.", timeout_s=180)
-        out: dict[str, Any] = {"to": "muse", "tier": res.tier, "model": res.model,
-                               "reply": res.text, "duration_s": res.duration_s}
+        res = ask_llm(
+            reg, "muse", message, system="You are Muse, creative & strategic AI collaborator in AI Fleet.", timeout_s=180
+        )
+        out: dict[str, Any] = {
+            "to": "muse",
+            "tier": res.tier,
+            "model": res.model,
+            "reply": res.text,
+            "duration_s": res.duration_s,
+        }
         if channel and channel.lower() != "none":
             out["channels"] = _dispatch_channel(
-                channel, f"[Muse / {res.model}]\n{res.text[:1500]}",
-                repo=repo, issue=issue, title=title or "Muse Fleet Note",
+                channel,
+                f"[Muse / {res.model}]\n{res.text[:1500]}",
+                repo=repo,
+                issue=issue,
+                title=title or "Muse Fleet Note",
             )
         return out
 
@@ -185,8 +215,21 @@ def comm_message(to: str, message: str = "", *, repo: str = "d123d/agent-comms",
         if not gh:
             raise FleetError("gh CLI not found on PATH")
         if read:
-            p = _run_cmd([gh, "issue", "list", "--repo", repo, "--state", "open",
-                          "--json", "number,title,labels,body,comments,updatedAt", "--limit", "20"])
+            p = _run_cmd(
+                [
+                    gh,
+                    "issue",
+                    "list",
+                    "--repo",
+                    repo,
+                    "--state",
+                    "open",
+                    "--json",
+                    "number,title,labels,body,comments,updatedAt",
+                    "--limit",
+                    "20",
+                ]
+            )
             if p.returncode != 0:
                 raise FleetError(f"gh issue list failed: {(p.stderr or p.stdout).strip()[:300]}")
             return {"to": "github", "repo": repo, "action": "list", "issues": json.loads(p.stdout or "[]")}
@@ -198,7 +241,7 @@ def comm_message(to: str, message: str = "", *, repo: str = "d123d/agent-comms",
                 raise FleetError(f"gh issue comment failed: {(p.stderr or p.stdout).strip()[:300]}")
             return {"to": "github", "repo": repo, "action": "comment", "issue": issue, "url": p.stdout.strip()}
         argv = [gh, "issue", "create", "--repo", repo, "--title", title or "AI Fleet Note", "--body", message]
-        for lbl in (labels or []):
+        for lbl in labels or []:
             argv += ["--label", lbl]
         p = _run_cmd(argv)
         if p.returncode != 0:

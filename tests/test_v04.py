@@ -1,5 +1,6 @@
 """Ultron v0.4.0: adapters, providers, bake-off learning, embeddings, costs,
 streaming, sync --add, weights merge, privacy gate."""
+
 import io
 import json
 import sys
@@ -34,54 +35,94 @@ def secrets(mapping):
     return req, lambda name: mapping.get(name, "")
 
 
-BODY = {"model": "m", "messages": [{"role": "system", "content": "be terse"},
-                                   {"role": "user", "content": "hi"}], "temperature": 0.2, "max_tokens": 50}
+BODY = {
+    "model": "m",
+    "messages": [{"role": "system", "content": "be terse"}, {"role": "user", "content": "hi"}],
+    "temperature": 0.2,
+    "max_tokens": 50,
+}
 
 
 # --- 1. adapters ---
 def test_azure_build():
     req, opt = secrets({"AZURE_OPENAI_API_KEY": "k1", "AZURE_OPENAI_ENDPOINT": "https://res.openai.azure.com/"})
-    url, headers, payload, mode = providers.build(tier(adapter="azure", key_env="AZURE_OPENAI_API_KEY", model="gpt-5.5"),
-                                                  BODY, req, opt)
+    url, headers, payload, mode = providers.build(
+        tier(adapter="azure", key_env="AZURE_OPENAI_API_KEY", model="gpt-5.5"), BODY, req, opt
+    )
     assert url == "https://res.openai.azure.com/openai/deployments/gpt-5.5/chat/completions?api-version=2024-10-21"
     assert headers["api-key"] == "k1" and "model" not in payload
 
 
 def test_bedrock_build_parse_and_sigv4():
     req, opt = secrets({"AWS_ACCESS_KEY_ID": "AKID", "AWS_SECRET_ACCESS_KEY": "sek", "AWS_REGION": "eu-west-1"})
-    url, headers, payload, _ = providers.build(tier(adapter="bedrock", key_env="AWS_ACCESS_KEY_ID",
-                                                    model="openai.gpt-oss-120b"), BODY, req, opt)
+    url, headers, payload, _ = providers.build(
+        tier(adapter="bedrock", key_env="AWS_ACCESS_KEY_ID", model="openai.gpt-oss-120b"), BODY, req, opt
+    )
     assert url.startswith("https://bedrock-runtime.eu-west-1.amazonaws.com/model/openai.gpt-oss-120b/converse")
     assert payload["system"] == [{"text": "be terse"}]
     assert payload["messages"] == [{"role": "user", "content": [{"text": "hi"}]}]
     assert headers["Authorization"].startswith("AWS4-HMAC-SHA256 Credential=AKID/")
-    out = providers.parse("bedrock", {"output": {"message": {"content": [{"text": "hello"}]}},
-                                      "usage": {"inputTokens": 3, "outputTokens": 1}, "stopReason": "end_turn"})
+    out = providers.parse(
+        "bedrock",
+        {
+            "output": {"message": {"content": [{"text": "hello"}]}},
+            "usage": {"inputTokens": 3, "outputTokens": 1},
+            "stopReason": "end_turn",
+        },
+    )
     assert out["choices"][0]["message"]["content"] == "hello" and out["usage"]["prompt_tokens"] == 3
-    h1 = providers.sigv4_headers(method="POST", host="h", path="/p", body=b"{}", access="A", secret_key="S",
-                                 region="us-east-1", service="bedrock", when=datetime(2026, 1, 1, tzinfo=UTC))
-    h2 = providers.sigv4_headers(method="POST", host="h", path="/p", body=b"{}", access="A", secret_key="S",
-                                 region="us-east-1", service="bedrock", when=datetime(2026, 1, 1, tzinfo=UTC))
+    h1 = providers.sigv4_headers(
+        method="POST",
+        host="h",
+        path="/p",
+        body=b"{}",
+        access="A",
+        secret_key="S",
+        region="us-east-1",
+        service="bedrock",
+        when=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+    h2 = providers.sigv4_headers(
+        method="POST",
+        host="h",
+        path="/p",
+        body=b"{}",
+        access="A",
+        secret_key="S",
+        region="us-east-1",
+        service="bedrock",
+        when=datetime(2026, 1, 1, tzinfo=UTC),
+    )
     assert h1 == h2  # deterministic signing
 
 
 def test_vertex_express_build_parse(monkeypatch):
     monkeypatch.setattr(providers.shutil, "which", lambda _: None)
     req, opt = secrets({"VERTEX_API_KEY": "vk"})
-    url, headers, payload, mode = providers.build(tier(adapter="vertex", key_env="VERTEX_API_KEY",
-                                                       model="gemini-3.5-flash"), BODY, req, opt)
+    url, headers, payload, mode = providers.build(
+        tier(adapter="vertex", key_env="VERTEX_API_KEY", model="gemini-3.5-flash"), BODY, req, opt
+    )
     assert url.endswith("/publishers/google/models/gemini-3.5-flash:generateContent") and mode == "vertex-gemini"
     assert headers["x-goog-api-key"] == "vk"
     assert payload["contents"] == [{"role": "user", "parts": [{"text": "hi"}]}]
-    out = providers.parse("vertex", {"candidates": [{"content": {"parts": [{"text": "yo"}]}}],
-                                     "usageMetadata": {"promptTokenCount": 2, "candidatesTokenCount": 1}}, mode)
+    out = providers.parse(
+        "vertex",
+        {
+            "candidates": [{"content": {"parts": [{"text": "yo"}]}}],
+            "usageMetadata": {"promptTokenCount": 2, "candidatesTokenCount": 1},
+        },
+        mode,
+    )
     assert out["choices"][0]["message"]["content"] == "yo"
 
 
 def test_cloudflare_build_and_missing_account():
     req, opt = secrets({"CLOUDFLARE_API_TOKEN": "ct", "CLOUDFLARE_ACCOUNT_ID": "acc9"})
-    t = tier(adapter="cloudflare", key_env="CLOUDFLARE_API_TOKEN",
-             base_url="https://api.cloudflare.com/client/v4/accounts/{account}/ai/v1")
+    t = tier(
+        adapter="cloudflare",
+        key_env="CLOUDFLARE_API_TOKEN",
+        base_url="https://api.cloudflare.com/client/v4/accounts/{account}/ai/v1",
+    )
     url, headers, _, _ = providers.build(t, BODY, req, opt)
     assert "/accounts/acc9/ai/v1/chat/completions" in url and headers["Authorization"] == "Bearer ct"
     req2, opt2 = secrets({"CLOUDFLARE_API_TOKEN": "ct"})
@@ -149,8 +190,13 @@ def test_ask_stream(monkeypatch, tmp_path):
     from ai_neural_network import llm
 
     monkeypatch.setenv("FLEET_STATE_DIR", str(tmp_path))
-    reg = Registry(workers={}, tiers={"s": Tier(id="s", base_url="https://x.example/v1", model="m", cost="free")},
-                   cost_order=["free"], chains={}, board={})
+    reg = Registry(
+        workers={},
+        tiers={"s": Tier(id="s", base_url="https://x.example/v1", model="m", cost="free")},
+        cost_order=["free"],
+        chains={},
+        board={},
+    )
     sse = b'data: {"choices":[{"delta":{"content":"he"}}]}\n\ndata: {"choices":[{"delta":{"content":"llo"}}]}\n\ndata: [DONE]\n'
 
     class Resp(io.BytesIO):

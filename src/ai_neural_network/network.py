@@ -225,8 +225,7 @@ class Network:
                 w = w + 0.01 if success else w - 0.01
                 self.synapses[edge] = max(-1.0, min(-0.05, w))
 
-    def sleep(self, decay: float = 0.01, prune_below: float = 0.05,
-              save_path: str | Path | None = None) -> dict[str, Any]:
+    def sleep(self, decay: float = 0.01, prune_below: float = 0.05, save_path: str | Path | None = None) -> dict[str, Any]:
         """Sleep consolidation: decay every excitatory weight, prune the
         ones that faded below prune_below to 0, persist weights.json."""
         pruned: list[str] = []

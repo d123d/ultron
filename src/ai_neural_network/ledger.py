@@ -1,4 +1,5 @@
 """Append-only usage ledger (one JSON line per run/ask) and summaries."""
+
 from __future__ import annotations
 
 import json
@@ -33,8 +34,9 @@ def read(tail: int | None = None) -> list[dict[str, Any]]:
 
 def summary(rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     rows = read() if rows is None else rows
-    per: dict[str, dict[str, Any]] = defaultdict(lambda: {"runs": 0, "ok": 0, "failed": 0, "duration_s": 0.0,
-                                                          "input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0})
+    per: dict[str, dict[str, Any]] = defaultdict(
+        lambda: {"runs": 0, "ok": 0, "failed": 0, "duration_s": 0.0, "input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0}
+    )
     by_cost: dict[str, int] = defaultdict(int)
     for r in rows:
         key = f"{r.get('type', 'run')}:{r.get('worker') or r.get('tier') or '?'}"

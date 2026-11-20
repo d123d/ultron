@@ -1,4 +1,5 @@
 """MCP server exposing ai-neural-network (`brain-mcp`) to MCP-capable agents."""
+
 from __future__ import annotations
 
 import json
@@ -271,9 +272,7 @@ async def brain_leader(
         return _j(await _thread(lambda: leader.wake_leader(message, channel=channel, repo=repo, issue=issue, reg=reg)))
     if action == "comm":
         return _j(
-            await _thread(
-                lambda: leader.comm_message(to, message, repo=repo, issue=issue, read=read, channel=channel, reg=reg)
-            )
+            await _thread(lambda: leader.comm_message(to, message, repo=repo, issue=issue, read=read, channel=channel, reg=reg))
         )
     return _j({"error": f"unknown action {action!r}"})
 
@@ -295,15 +294,33 @@ async def brain_workers() -> str:
 
 @mcp.tool()
 @_guard
-async def brain_job(kind: str, prompt: str, cwd: str = "", done_when: list[str] | None = None,
-                    images: list[str] | None = None, files: list[str] | None = None, timeout_s: int = 0) -> str:
+async def brain_job(
+    kind: str,
+    prompt: str,
+    cwd: str = "",
+    done_when: list[str] | None = None,
+    images: list[str] | None = None,
+    files: list[str] | None = None,
+    timeout_s: int = 0,
+) -> str:
     """Do work in a job slot: Ultron picks the best model for that kind of job and falls through on failure.
     Kinds (config/jobs.yaml): quick, bulk, extract, reason, plan, verify, vision, research, draft, private,
     leader, best, and the agent-harness jobs code, review, investigate, local-code, unattended (these need cwd)."""
     from . import slots
 
-    return _j(await _thread(slots.run_job, registry.load(), kind, prompt, cwd=cwd or None, done_when=done_when,
-                            images=images or [], files=files or [], timeout_s=timeout_s or None))
+    return _j(
+        await _thread(
+            slots.run_job,
+            registry.load(),
+            kind,
+            prompt,
+            cwd=cwd or None,
+            done_when=done_when,
+            images=images or [],
+            files=files or [],
+            timeout_s=timeout_s or None,
+        )
+    )
 
 
 @mcp.tool()

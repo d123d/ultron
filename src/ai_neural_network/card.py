@@ -97,8 +97,12 @@ def render_prompt(card: TaskCard, worker: Worker) -> str:
     if card.done_when:
         lines.extend(["DONE WHEN these commands succeed:", *[f"- {item}" for item in card.done_when]])
     if skills := skills_for(card.goal):
-        lines.extend(["SKILLS (how this machine does this kind of work; read the ones that fit before you start):",
-                      *[f"- {p}" for p in skills]])
+        lines.extend(
+            [
+                "SKILLS (how this machine does this kind of work; read the ones that fit before you start):",
+                *[f"- {p}" for p in skills],
+            ]
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -123,4 +127,3 @@ def skills_for(text: str, limit: int = 10) -> list[str]:
     paths = [str(p) for n in names if (p := library / n / "SKILL.md").is_file()][:limit]
     always = [a for a in cfg.get("always", []) if Path(a).is_file()] if paths else []
     return always + paths
-

@@ -6,6 +6,7 @@ updates across processes. Guarantees per provider (config in workers.yaml `throt
   - max_concurrent:  maximum requests in flight (in-flight = starts newer than slot_ttl_s, so crashes self-heal)
   - max_queue_s:     how long a caller waits for a free slot before failing
 """
+
 from __future__ import annotations
 
 import json
@@ -24,6 +25,8 @@ _LOCK_WAIT_S = 10.0
 
 class Busy(FleetError):
     """No free slot on the provider within max_queue_s: callers may try another provider."""
+
+
 _CFG_KEYS = {"min_interval_s", "max_concurrent", "max_queue_s", "slot_ttl_s"}
 
 
@@ -164,8 +167,10 @@ def slot(reg, base_url: str):
         if start is not None:
             break
         if time.monotonic() > deadline:
-            raise Busy(f"provider {key} still busy after {cfg['max_queue_s']:.0f}s "
-                             f"(min_interval {cfg['min_interval_s']}s, max_concurrent {cfg['max_concurrent']})")
+            raise Busy(
+                f"provider {key} still busy after {cfg['max_queue_s']:.0f}s "
+                f"(min_interval {cfg['min_interval_s']}s, max_concurrent {cfg['max_concurrent']})"
+            )
         time.sleep(min(0.25, max(0.02, cfg["min_interval_s"] / 4)))
     try:
         yield key
@@ -186,8 +191,11 @@ def peek(reg, base_urls: list[str]) -> dict[str, dict]:
             entry = data.get(key) or {}
             snap = dict(entry)
             in_flight = _prune(snap, now, config_for(reg, url)["slot_ttl_s"])
-            out[key] = {"in_flight": in_flight, "since_last_start": now - entry.get("last_start", 0.0),
-                        "max_concurrent": config_for(reg, url)["max_concurrent"]}
+            out[key] = {
+                "in_flight": in_flight,
+                "since_last_start": now - entry.get("last_start", 0.0),
+                "max_concurrent": config_for(reg, url)["max_concurrent"],
+            }
     return out
 
 

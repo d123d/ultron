@@ -7,6 +7,7 @@ instead of hammering the provider. A tier spec may be one tier, a comma list ("u
 (cheapest healthy tier first); on provider errors (429/5xx/unreachable) the next candidate tier is tried.
 A single named tier also tries its registry `fallback` tiers, in order. Images go as OpenAI image_url parts.
 """
+
 from __future__ import annotations
 
 import base64
@@ -42,9 +43,19 @@ TIER_COOLDOWN_S = 900  # back off this long after a provider says we are too hot
 AUTH_COOLDOWN_S = 3600  # expired login or rejected key
 AUTH_RE = re.compile(r"authenticat|oauth|not logged in|log ?in again|unauthori[sz]ed|invalid api key", re.I)
 DOWN_COOLDOWN_S = 300  # unreachable, timed out or 5xx: skip the tier briefly instead of re-waiting the full timeout
-_QUOTA_PATTERNS = ["rate limit", "rate_limit", "quota", "usage limit", "429", "insufficient_quota",
-                   "exceeded your", "too many requests", "overloaded",
-                   "balance is too low", "purchase more credits"]  # agy Google AI credits, codex plan credits
+_QUOTA_PATTERNS = [
+    "rate limit",
+    "rate_limit",
+    "quota",
+    "usage limit",
+    "429",
+    "insufficient_quota",
+    "exceeded your",
+    "too many requests",
+    "overloaded",
+    "balance is too low",
+    "purchase more credits",
+]  # agy Google AI credits, codex plan credits
 
 
 class ProviderError(FleetError):
@@ -62,8 +73,9 @@ class CapReached(ProviderError):
 def calls_today(tier_id: str) -> int:
     """Ledgered asks to this tier since UTC midnight (failed ones too: they cost quota as well)."""
     day = datetime.now(UTC).date().isoformat()
-    return sum(1 for r in ledger.read() if r.get("type") == "ask" and r.get("tier") == tier_id
-               and str(r.get("ts", "")).startswith(day))
+    return sum(
+        1 for r in ledger.read() if r.get("type") == "ask" and r.get("tier") == tier_id and str(r.get("ts", "")).startswith(day)
+    )
 
 
 def _check_cap(tier: Tier, n: int = 1) -> None:
@@ -139,8 +151,10 @@ def _flat(messages: list[dict]) -> str:
     return messages[0]["content"] if one else "\n\n".join(f"{m['role'].upper()}:\n{m['content']}" for m in messages)
 
 
-AGY_AGENT = "---\nname: fleet-ask\ndescription: Answers one question directly with no tools.\ntools: []\n---\n" \
-            "Answer the user's question directly. Use no tools.\n"
+AGY_AGENT = (
+    "---\nname: fleet-ask\ndescription: Answers one question directly with no tools.\ntools: []\n---\n"
+    "Answer the user's question directly. Use no tools.\n"
+)
 
 
 def _agy_plain_agent(work: Path) -> list[str]:
@@ -163,16 +177,26 @@ def _cli_argv(tier: Tier, text: str, work: Path, names: list[str]) -> tuple[list
         argv = [_exe("agy"), *args, "--model", tier.model, "--disable-slash-commands"]
         return argv + ([] if names else _agy_plain_agent(work)), stdin_text, text
     if tier.cli == "codex":  # ChatGPT subscription; prompt on stdin ("-"), read-only sandbox, answer to a file
-        argv = [_exe("codex"), "exec", "-", "-m", tier.model, "--skip-git-repo-check", "--ephemeral",
-                "-s", "read-only", "-o", str(work / "answer.md")]
+        argv = [
+            _exe("codex"),
+            "exec",
+            "-",
+            "-m",
+            tier.model,
+            "--skip-git-repo-check",
+            "--ephemeral",
+            "-s",
+            "read-only",
+            "-o",
+            str(work / "answer.md"),
+        ]
         if tier.effort:
             argv += ["-c", f"model_reasoning_effort={tier.effort}"]
         for n in names:
             argv += ["-i", n]
         return argv, text, text
     if tier.cli == "claude":  # Claude subscription; no tools, nothing saved
-        argv = [_exe("claude"), "-p", "--output-format", "json", "--model", tier.model, "--tools", "",
-                "--no-session-persistence"]
+        argv = [_exe("claude"), "-p", "--output-format", "json", "--model", tier.model, "--tools", "", "--no-session-persistence"]
         # "[claude-code:unrecognized_model]" on stderr (e.g. claude-fable-5-2) is only a warning; the call runs
         if tier.effort:
             argv += ["--effort", tier.effort]
@@ -226,8 +250,16 @@ def _cli_post(tier: Tier, messages: list[dict], timeout_s: float, images: list[s
 
         def run() -> subprocess.CompletedProcess:
             try:
-                return subprocess.run(argv, cwd=work, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                                      timeout=timeout_s, input=stdin_text if stdin_text is not None else "")
+                return subprocess.run(
+                    argv,
+                    cwd=work,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=timeout_s,
+                    input=stdin_text if stdin_text is not None else "",
+                )
             except subprocess.TimeoutExpired:
                 raise ProviderError(f"tier {tier.id}: {tier.cli} gave no answer within {timeout_s:.0f}s", down=True) from None
 
@@ -262,8 +294,16 @@ def _cli_post(tier: Tier, messages: list[dict], timeout_s: float, images: list[s
         shutil.rmtree(work, ignore_errors=True)
 
 
-def _post(reg: Registry, tier: Tier, messages: list[dict], *, max_tokens: int | None, json_mode: bool,
-          timeout_s: float, images: list[str] | tuple = ()) -> dict:
+def _post(
+    reg: Registry,
+    tier: Tier,
+    messages: list[dict],
+    *,
+    max_tokens: int | None,
+    json_mode: bool,
+    timeout_s: float,
+    images: list[str] | tuple = (),
+) -> dict:
     if tier.cli:
         with slot(reg, tier.base_url):
             return _cli_post(tier, messages, timeout_s, images)
@@ -289,10 +329,12 @@ def _post(reg: Registry, tier: Tier, messages: list[dict], *, max_tokens: int | 
         headers["x-opencode-session"] = str(uuid.uuid4())
         # opencode.ai sits behind Cloudflare, which 403s urllib's default UA (error 1010);
         # the gate passed with an app UA, so send a browser one here.
-        headers["User-Agent"] = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                                 "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
-    req = urllib.request.Request(f"{tier.base_url.rstrip('/')}/chat/completions", data=json.dumps(body).encode(),
-                                 headers=headers, method="POST")
+        headers["User-Agent"] = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+        )
+    req = urllib.request.Request(
+        f"{tier.base_url.rstrip('/')}/chat/completions", data=json.dumps(body).encode(), headers=headers, method="POST"
+    )
     with slot(reg, tier.base_url):  # spacing + concurrency, cross-process
         return _send(req, tier, timeout_s)
 
@@ -356,10 +398,19 @@ def candidates(reg: Registry, tier_spec: str) -> list[str]:
     if any(s.partition(":")[2] in ("top", "cheap") for s in ids):  # provider model slots (config/provider_slots.yaml)
         from .slots import expand_slots, model_slot
 
-        ids = list(dict.fromkeys(x for s in ids for x in (
-            expand_slots(reg, s[2:]) if s in ("*:top", "*:cheap")
-            else [model_slot(reg, s.partition(":")[0], s.partition(":")[2])] if s.partition(":")[2] in ("top", "cheap")
-            else [s])))
+        ids = list(
+            dict.fromkeys(
+                x
+                for s in ids
+                for x in (
+                    expand_slots(reg, s[2:])
+                    if s in ("*:top", "*:cheap")
+                    else [model_slot(reg, s.partition(":")[0], s.partition(":")[2])]
+                    if s.partition(":")[2] in ("top", "cheap")
+                    else [s]
+                )
+            )
+        )
         if len(ids) > 1 and "," not in tier_spec:
             tier_spec += ","  # an expanded slot list keeps its own order and fallbacks
     for spec in ids:  # "provider:model": any model in that provider's slot, as a one-off tier
@@ -416,9 +467,18 @@ def _is_quota_err(reg: Registry, err: ProviderError) -> bool:
     return any(p.lower() in hay for p in patterns)
 
 
-def _ask_one(reg: Registry, tier_id: str, prompt: str, *, system: str | None = None, schema: dict | None = None,
-             files: list[str] | tuple = (), images: list[str] | tuple = (), max_tokens: int | None = None,
-             timeout_s: float = 180) -> AskResult:
+def _ask_one(
+    reg: Registry,
+    tier_id: str,
+    prompt: str,
+    *,
+    system: str | None = None,
+    schema: dict | None = None,
+    files: list[str] | tuple = (),
+    images: list[str] | tuple = (),
+    max_tokens: int | None = None,
+    timeout_s: float = 180,
+) -> AskResult:
     tier = reg.tiers[tier_id]
     _check_cap(tier)  # subscription quota is shared with people's own sessions: never burn it in a loop
     user = prompt
@@ -435,8 +495,15 @@ def _ask_one(reg: Registry, tier_id: str, prompt: str, *, system: str | None = N
     usage: dict[str, Any] = {}
     error = ""
     try:
-        resp = _post(reg, tier, messages, max_tokens=max_tokens, json_mode=schema is not None, timeout_s=timeout_s,
-                     images=images if tier.cli else ())
+        resp = _post(
+            reg,
+            tier,
+            messages,
+            max_tokens=max_tokens,
+            json_mode=schema is not None,
+            timeout_s=timeout_s,
+            images=images if tier.cli else (),
+        )
         try:
             text = _text(resp)
         except CutOff:  # reasoning ate the budget: one retry with room to spare before falling back
@@ -444,8 +511,7 @@ def _ask_one(reg: Registry, tier_id: str, prompt: str, *, system: str | None = N
             resp = _post(reg, tier, messages, max_tokens=max_tokens, json_mode=schema is not None, timeout_s=timeout_s)
             text = _text(resp)
         usage = resp.get("usage") or {}
-        result = AskResult(text=text, model=resp.get("model", tier.model), tier=tier_id,
-                           provider=provider_key(tier.base_url))
+        result = AskResult(text=text, model=resp.get("model", tier.model), tier=tier_id, provider=provider_key(tier.base_url))
         if schema is not None:
             for attempt in range(2):
                 try:
@@ -458,8 +524,10 @@ def _ask_one(reg: Registry, tier_id: str, prompt: str, *, system: str | None = N
                     if attempt:
                         break
                     msg = getattr(e, "message", str(e))
-                    messages += [{"role": "assistant", "content": text},
-                                 {"role": "user", "content": f"Your JSON failed validation: {msg}. Return corrected JSON only."}]
+                    messages += [
+                        {"role": "assistant", "content": text},
+                        {"role": "user", "content": f"Your JSON failed validation: {msg}. Return corrected JSON only."},
+                    ]
                     resp = _post(reg, tier, messages, max_tokens=max_tokens, json_mode=True, timeout_s=timeout_s)
                     text = _text(resp)
                     result.text = text
@@ -473,9 +541,15 @@ def _ask_one(reg: Registry, tier_id: str, prompt: str, *, system: str | None = N
         error = redact(str(e))[:300]
         raise
     finally:
-        row = {"type": "ask", "tier": tier_id, "cost": tier.cost, "status": status,
-               "duration_s": round(time.monotonic() - start, 2),
-               "input_tokens": usage.get("prompt_tokens"), "output_tokens": usage.get("completion_tokens")}
+        row = {
+            "type": "ask",
+            "tier": tier_id,
+            "cost": tier.cost,
+            "status": status,
+            "duration_s": round(time.monotonic() - start, 2),
+            "input_tokens": usage.get("prompt_tokens"),
+            "output_tokens": usage.get("completion_tokens"),
+        }
         if error:  # ledger errors without a reason could not be diagnosed (2026-11-06)
             row["error"] = error
         ledger.append(row)
@@ -505,9 +579,19 @@ def _free_daily_reset_s(tier: Tier) -> int | None:
     return int((now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1) - now).total_seconds()) + 60
 
 
-def ask(reg: Registry, tier_spec: str, prompt: str, *, system: str | None = None, schema: dict | None = None,
-        files: list[str] | tuple = (), images: list[str] | tuple = (), max_tokens: int | None = None,
-        timeout_s: float = 180, private: bool = False) -> AskResult:
+def ask(
+    reg: Registry,
+    tier_spec: str,
+    prompt: str,
+    *,
+    system: str | None = None,
+    schema: dict | None = None,
+    files: list[str] | tuple = (),
+    images: list[str] | tuple = (),
+    max_tokens: int | None = None,
+    timeout_s: float = 180,
+    private: bool = False,
+) -> AskResult:
     """Call an LLM tier. tier_spec: one tier (+ its fallback tiers), 'auto' (cheapest healthy), or a comma list.
     private=True: only tiers on this machine, whatever tier_spec says."""
     cands = local_tiers(reg) if private else candidates(reg, tier_spec)
@@ -521,14 +605,23 @@ def ask(reg: Registry, tier_spec: str, prompt: str, *, system: str | None = None
     named = tier_spec != "auto" and "," not in tier_spec  # keep the primary-then-fallback order
     last: ProviderError | None = None
     down: set[str] = set()  # providers that failed to answer at all during this call
-    for tid in (cands if named else spread_order(reg, cands)):
+    for tid in cands if named else spread_order(reg, cands):
         if health.in_cooldown(tid):  # a sibling on the same shared quota cooled it down this call
             continue
         if provider_key(reg.tiers[tid].base_url) in down:  # same provider just timed out: try another first
             continue
         try:
-            return _ask_one(reg, tid, prompt, system=system, schema=schema, files=files, images=images,
-                            max_tokens=max_tokens, timeout_s=timeout_s)
+            return _ask_one(
+                reg,
+                tid,
+                prompt,
+                system=system,
+                schema=schema,
+                files=files,
+                images=images,
+                max_tokens=max_tokens,
+                timeout_s=timeout_s,
+            )
         except (Busy, CapReached) as e:  # provider queue full or daily cap used: next tier, no cooldown
             last = e if isinstance(e, ProviderError) else ProviderError(str(e))
             if len(cands) == 1:
@@ -553,7 +646,7 @@ def ask(reg: Registry, tier_spec: str, prompt: str, *, system: str | None = None
             elif e.down or (e.status or 0) >= 500 or e.status in (401, 403):
                 wait = AUTH_COOLDOWN_S if e.status in (401, 403) else int(e.retry_after_s or DOWN_COOLDOWN_S)
                 # a rejected key fails every tier that uses it; a down host is per tier (other models may answer)
-                for sib in (_account_tiers(reg, reg.tiers[tid]) if e.status in (401, 403) else [tid]):
+                for sib in _account_tiers(reg, reg.tiers[tid]) if e.status in (401, 403) else [tid]:
                     health.set_cooldown(sib, wait, f"provider down or login/key rejected: {str(e)[:200]}")
                 health.record_error(tid, str(e))
                 if e.down:
@@ -570,8 +663,17 @@ def _final(text: str) -> str:
     return " ".join(line.strip().strip("*`.").lower().split())
 
 
-def vote(reg: Registry, tier_spec: str, prompt: str, *, system: str | None = None, files: list[str] | tuple = (),
-         max_tokens: int | None = None, timeout_s: float = 180, trust_weights: dict[str, float] | None = None) -> AskResult:
+def vote(
+    reg: Registry,
+    tier_spec: str,
+    prompt: str,
+    *,
+    system: str | None = None,
+    files: list[str] | tuple = (),
+    max_tokens: int | None = None,
+    timeout_s: float = 180,
+    trust_weights: dict[str, float] | None = None,
+) -> AskResult:
     """Ask every tier in a comma list at once (no fallbacks) and return the majority short answer."""
     tiers = _not_in_cooldown(_not_in_strata_test(reg, candidates(reg, tier_spec + ",")))
     if len(tiers) < 2:
@@ -594,14 +696,19 @@ def vote(reg: Registry, tier_spec: str, prompt: str, *, system: str | None = Non
     answer, winners = max(groups.items(), key=lambda kv: (sum((trust_weights or {}).get(r.tier, 1.0) for r in kv[1]), len(kv[1])))
     best = winners[0]
     best.tier = ",".join(r.tier for r in winners)
-    best.data = {"answer": answer, "agree": len(winners), "of": len(got),
-                 "weighted_score": round(sum((trust_weights or {}).get(r.tier, 1.0) for r in winners), 4),
-                 "votes": {a: [r.tier for r in rs] for a, rs in groups.items()}}
+    best.data = {
+        "answer": answer,
+        "agree": len(winners),
+        "of": len(got),
+        "weighted_score": round(sum((trust_weights or {}).get(r.tier, 1.0) for r in winners), 4),
+        "votes": {a: [r.tier for r in rs] for a, rs in groups.items()},
+    }
     return best
 
 
-def ask_many(reg: Registry, tier_spec: str, prompts: list[str], *, system: str | None = None,
-             timeout_s: float = 180) -> list[dict[str, Any]]:
+def ask_many(
+    reg: Registry, tier_spec: str, prompts: list[str], *, system: str | None = None, timeout_s: float = 180
+) -> list[dict[str, Any]]:
     """Many independent prompts. An agy tier answers them all in one process (one turn each, ~20 s a turn
     instead of ~40 s a call); every other tier gets one ask per prompt."""
     tier = reg.tiers.get(tier_spec)
@@ -618,20 +725,45 @@ def ask_many(reg: Registry, tier_spec: str, prompts: list[str], *, system: str |
 
     _check_cap(tier, len(prompts))
     head = (system + "\n\n") if system else ""
-    lines = [json.dumps({"event": "user", "message": {"role": "user", "content":
-             f"{head}Independent question {i} of {len(prompts)}; ignore earlier questions.\n\n{p}"}})
-             for i, p in enumerate(prompts, 1)]
+    lines = [
+        json.dumps(
+            {
+                "event": "user",
+                "message": {
+                    "role": "user",
+                    "content": f"{head}Independent question {i} of {len(prompts)}; ignore earlier questions.\n\n{p}",
+                },
+            }
+        )
+        for i, p in enumerate(prompts, 1)
+    ]
     work = state_dir() / "cli-ask" / uuid.uuid4().hex
     work.mkdir(parents=True)
     start = time.monotonic()
     answers: list[dict[str, Any]] = []
     try:
         with slot(reg, tier.base_url):
-            p = subprocess.run([_exe("agy"), "--input-format", "stream-json", "--output-format", "stream-json",
-                                "--model", tier.model, "--disable-slash-commands", *_agy_plain_agent(work), "-p="],
-                               cwd=work, input="\n".join(lines),
-                               capture_output=True, text=True, encoding="utf-8", errors="replace",
-                               timeout=timeout_s * len(prompts))
+            p = subprocess.run(
+                [
+                    _exe("agy"),
+                    "--input-format",
+                    "stream-json",
+                    "--output-format",
+                    "stream-json",
+                    "--model",
+                    tier.model,
+                    "--disable-slash-commands",
+                    *_agy_plain_agent(work),
+                    "-p=",
+                ],
+                cwd=work,
+                input="\n".join(lines),
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=timeout_s * len(prompts),
+            )
         for line in p.stdout.splitlines():
             try:
                 msg = json.loads(line)
@@ -640,8 +772,11 @@ def ask_many(reg: Registry, tier_spec: str, prompts: list[str], *, system: str |
             if isinstance(msg, dict) and msg.get("event") == "result":
                 res = msg["result"]
                 ok = res.get("status") == "SUCCESS" and (res.get("response") or "").strip()
-                answers.append({"tier": tier.id, "text": res["response"].strip()} if ok else
-                               {"tier": tier.id, "error": redact(str(res.get("error") or "empty reply"))[:300]})
+                answers.append(
+                    {"tier": tier.id, "text": res["response"].strip()}
+                    if ok
+                    else {"tier": tier.id, "error": redact(str(res.get("error") or "empty reply"))[:300]}
+                )
     except subprocess.TimeoutExpired:
         pass
     finally:
@@ -649,8 +784,17 @@ def ask_many(reg: Registry, tier_spec: str, prompts: list[str], *, system: str |
     answers += [{"tier": tier.id, "error": "no answer (agy stopped early)"}] * (len(prompts) - len(answers))
     each = round((time.monotonic() - start) / max(1, len(prompts)), 2)
     for a in answers:
-        ledger.append({"type": "ask", "tier": tier.id, "cost": tier.cost, "status": "ok" if "text" in a else "error",
-                       "duration_s": each, "batch": len(prompts), **({"error": a["error"]} if "error" in a else {})})
+        ledger.append(
+            {
+                "type": "ask",
+                "tier": tier.id,
+                "cost": tier.cost,
+                "status": "ok" if "text" in a else "error",
+                "duration_s": each,
+                "batch": len(prompts),
+                **({"error": a["error"]} if "error" in a else {}),
+            }
+        )
     return answers
 
 
@@ -659,9 +803,12 @@ def embed(reg: Registry, text: str, tier_spec: str = "openai-embed", timeout_s: 
     for tid in candidates(reg, tier_spec):
         tier = reg.tiers[tid]
         body = {"model": tier.model, "input": text}
-        req = urllib.request.Request(f"{tier.base_url.rstrip('/')}/embeddings", data=json.dumps(body).encode(),
-                                     headers={"Content-Type": "application/json",
-                                              "Authorization": f"Bearer {_tier_key(tier)}"}, method="POST")
+        req = urllib.request.Request(
+            f"{tier.base_url.rstrip('/')}/embeddings",
+            data=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {_tier_key(tier)}"},
+            method="POST",
+        )
         with slot(reg, tier.base_url):
             data = _send(req, tier, timeout_s)
         vec = data["data"][0]["embedding"]
@@ -670,8 +817,9 @@ def embed(reg: Registry, text: str, tier_spec: str = "openai-embed", timeout_s: 
     raise FleetError(f"no usable embed tier in {tier_spec!r}")
 
 
-def ask_stream(reg: Registry, tier_spec: str, prompt: str, *, system: str | None = None,
-               timeout_s: float = 180, private: bool = False):
+def ask_stream(
+    reg: Registry, tier_spec: str, prompt: str, *, system: str | None = None, timeout_s: float = 180, private: bool = False
+):
     """Yield answer deltas as they arrive (SSE), then ledger the ask like ask().
 
     Plain OpenAI-bearer tiers only; CLI and adapter tiers raise FleetError so the
@@ -687,9 +835,12 @@ def ask_stream(reg: Registry, tier_spec: str, prompt: str, *, system: str | None
     _check_cap(tier)
     messages = ([{"role": "system", "content": system}] if system else []) + [{"role": "user", "content": prompt}]
     body = {"model": tier.model, "messages": messages, "temperature": 0.2, "stream": True, **tier.extra}
-    req = urllib.request.Request(f"{tier.base_url.rstrip('/')}/chat/completions", data=json.dumps(body).encode(),
-                                 headers={"Content-Type": "application/json",
-                                          "Authorization": f"Bearer {_tier_key(tier)}"}, method="POST")
+    req = urllib.request.Request(
+        f"{tier.base_url.rstrip('/')}/chat/completions",
+        data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {_tier_key(tier)}"},
+        method="POST",
+    )
     start = time.monotonic()
     status, parts = "ok", []
     try:
@@ -712,6 +863,15 @@ def ask_stream(reg: Registry, tier_spec: str, prompt: str, *, system: str | None
         status = "error"
         raise
     finally:
-        ledger.append({"type": "ask", "tier": tier.id, "cost": tier.cost, "status": status, "stream": True,
-                       "duration_s": round(time.monotonic() - start, 2),
-                       "output_tokens": None, "input_tokens": None})
+        ledger.append(
+            {
+                "type": "ask",
+                "tier": tier.id,
+                "cost": tier.cost,
+                "status": status,
+                "stream": True,
+                "duration_s": round(time.monotonic() - start, 2),
+                "output_tokens": None,
+                "input_tokens": None,
+            }
+        )

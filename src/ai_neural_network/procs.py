@@ -1,4 +1,5 @@
 """Subprocess execution with timeouts that only ever kill the process tree we started, plus secret redaction."""
+
 from __future__ import annotations
 
 import os
@@ -58,8 +59,10 @@ def ensure_full_path() -> list[str]:
     import winreg
 
     raw: list[str] = []
-    keys = [(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment"),
-            (winreg.HKEY_CURRENT_USER, r"Environment")]
+    keys = [
+        (winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment"),
+        (winreg.HKEY_CURRENT_USER, r"Environment"),
+    ]
     for hive, subkey in keys:
         try:
             with winreg.OpenKey(hive, subkey) as k:

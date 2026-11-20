@@ -1,4 +1,5 @@
 """Deterministic worker routing: cheapest healthy capable worker first, with explicit skip reasons."""
+
 from __future__ import annotations
 
 import json
@@ -56,8 +57,9 @@ def skip_reason(w: Worker, capability: str, *, allow_claude: bool, gpu_busy: boo
     return None
 
 
-def candidates(reg: Registry, capability: str = "code", *, allow_claude: bool = False,
-               gpu_busy: bool | None = None) -> list[Candidate]:
+def candidates(
+    reg: Registry, capability: str = "code", *, allow_claude: bool = False, gpu_busy: bool | None = None
+) -> list[Candidate]:
     busy = comfy_busy() if gpu_busy is None else gpu_busy
     out = []
     for wid in _order(reg, capability):

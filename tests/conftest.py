@@ -10,9 +10,14 @@ BD = Path(r"C:\AI\tools\beads\bd.exe")
 
 
 def fake(mode: str, **extra) -> dict:
-    return {"kind": "agent", "control": "command", "cost": extra.pop("cost", "free"),
-            "capabilities": extra.pop("capabilities", ["code"]), "argv": [sys.executable, FAKE, mode, "{prompt_file}", "{cwd}"],
-            **extra}
+    return {
+        "kind": "agent",
+        "control": "command",
+        "cost": extra.pop("cost", "free"),
+        "capabilities": extra.pop("capabilities", ["code"]),
+        "argv": [sys.executable, FAKE, mode, "{prompt_file}", "{cwd}"],
+        **extra,
+    }
 
 
 @pytest.fixture(autouse=True)
@@ -66,4 +71,4 @@ def repo(tmp_path):
     return r
 
 
-HELLO_CHECK = 'python -c "import pathlib,sys; sys.exit(0 if pathlib.Path(\'hello.txt\').read_text()==\'hello\' else 1)"'
+HELLO_CHECK = "python -c \"import pathlib,sys; sys.exit(0 if pathlib.Path('hello.txt').read_text()=='hello' else 1)\""

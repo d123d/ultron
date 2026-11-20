@@ -14,15 +14,11 @@ def test_validate_handoff_valid_and_invalid():
 
 
 def test_parse_valid_fleet_result_valid_and_invalid():
-    data, errs = parse_valid_fleet_result(
-        'FLEET_RESULT: {"status": "ok", "summary": "done"}'
-    )
+    data, errs = parse_valid_fleet_result('FLEET_RESULT: {"status": "ok", "summary": "done"}')
     assert data == {"status": "ok", "summary": "done"}
     assert errs == []
 
-    bad_data, bad_errs = parse_valid_fleet_result(
-        'FLEET_RESULT: {"status": "unknown", "summary": ""}'
-    )
+    bad_data, bad_errs = parse_valid_fleet_result('FLEET_RESULT: {"status": "unknown", "summary": ""}')
     assert bad_data is None
     assert len(bad_errs) >= 2
 

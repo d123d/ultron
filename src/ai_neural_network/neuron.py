@@ -71,8 +71,12 @@ class Neuron:
 
         if self.name in loaded.workers:
             if private:
-                return {"kind": "agent", "neuron": self.name, "ok": False,
-                        "error": "private stimulus: worker CLIs are not local execution"}
+                return {
+                    "kind": "agent",
+                    "neuron": self.name,
+                    "ok": False,
+                    "error": "private stimulus: worker CLIs are not local execution",
+                }
             from .card import TaskCard
             from .runner import RunOptions, run_card
 

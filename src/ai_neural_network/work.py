@@ -1,4 +1,5 @@
 """Work loop: drain ready board tasks (claim, run, verify, close or reopen) and batch fan-out."""
+
 from __future__ import annotations
 
 import json
@@ -27,9 +28,17 @@ def _fail_count(issue: dict) -> int:
     return n
 
 
-def work(reg: Registry, board: Board, *, max_tasks: int = 1, max_minutes: float | None = None,
-         actor: str | None = None, worker: str = "auto", opts: RunOptions | None = None,
-         on_result: Callable[[dict], None] | None = None) -> list[dict]:
+def work(
+    reg: Registry,
+    board: Board,
+    *,
+    max_tasks: int = 1,
+    max_minutes: float | None = None,
+    actor: str | None = None,
+    worker: str = "auto",
+    opts: RunOptions | None = None,
+    on_result: Callable[[dict], None] | None = None,
+) -> list[dict]:
     actor = actor or f"fleet-{socket.gethostname()}-{os.getpid()}"
     deadline = time.monotonic() + max_minutes * 60 if max_minutes else None
     done: list[dict] = []
@@ -43,8 +52,14 @@ def work(reg: Registry, board: Board, *, max_tasks: int = 1, max_minutes: float 
         # a card that failed its checks before starts with the next harness, not the one that just failed it
         retry_opts = replace(opts or RunOptions(), rotate=_fail_count(issue))
         env = run_card(reg, card, card.worker or worker, retry_opts)
-        row = {"task": issue["id"], "title": issue.get("title"), "status": env.status, "worker": env.worker,
-               "run_id": env.run_id, "reason": env.reason}
+        row = {
+            "task": issue["id"],
+            "title": issue.get("title"),
+            "status": env.status,
+            "worker": env.worker,
+            "run_id": env.run_id,
+            "reason": env.reason,
+        }
         if env.ok:
             board.close(issue["id"], actor, f"{env.summary[:300]} (run {env.run_id})")
         else:
@@ -58,8 +73,9 @@ def work(reg: Registry, board: Board, *, max_tasks: int = 1, max_minutes: float 
     return done
 
 
-def batch(reg: Registry, cards: list[TaskCard], *, parallel: int = 2, worker: str = "auto",
-          opts: RunOptions | None = None) -> Iterator[Envelope]:
+def batch(
+    reg: Registry, cards: list[TaskCard], *, parallel: int = 2, worker: str = "auto", opts: RunOptions | None = None
+) -> Iterator[Envelope]:
     """Yield envelopes as runs complete, honouring each worker's max_parallel."""
     sems = {w.id: threading.Semaphore(w.max_parallel) for w in reg.workers.values()}
     guard = threading.Semaphore(max(1, parallel))

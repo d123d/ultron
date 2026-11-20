@@ -1,4 +1,5 @@
 """One fleet run: card -> worker -> process -> parse -> verify -> diff -> envelope -> ledger."""
+
 from __future__ import annotations
 
 import json
@@ -35,10 +36,21 @@ def new_run_id() -> str:
 
 
 def _ledger(env: Envelope, cost: str) -> None:
-    ledger.append({"type": "run", "id": env.run_id, "card_id": env.card_id, "worker": env.worker, "cost": cost,
-                   "status": env.status, "duration_s": env.duration_s,
-                   "input_tokens": env.usage.get("input_tokens"), "output_tokens": env.usage.get("output_tokens"),
-                   "cost_usd": env.usage.get("cost_usd"), "reason": (env.reason or "")[:200]})
+    ledger.append(
+        {
+            "type": "run",
+            "id": env.run_id,
+            "card_id": env.card_id,
+            "worker": env.worker,
+            "cost": cost,
+            "status": env.status,
+            "duration_s": env.duration_s,
+            "input_tokens": env.usage.get("input_tokens"),
+            "output_tokens": env.usage.get("output_tokens"),
+            "cost_usd": env.usage.get("cost_usd"),
+            "reason": (env.reason or "")[:200],
+        }
+    )
 
 
 def run_once(reg: Registry, card: TaskCard, worker_id: str, opts: RunOptions) -> Envelope:
@@ -47,8 +59,9 @@ def run_once(reg: Registry, card: TaskCard, worker_id: str, opts: RunOptions) ->
     worker = reg.workers.get(worker_id)
     if worker is None:
         raise FleetError(f"unknown worker {worker_id!r} (see `fleet workers`)")
-    base = Envelope(run_id=run_id, card_id=card.id, worker=worker.id, control=worker.control, status="skipped",
-                    started_at=started)
+    base = Envelope(
+        run_id=run_id, card_id=card.id, worker=worker.id, control=worker.control, status="skipped", started_at=started
+    )
 
     def refuse(reason: str) -> Envelope:
         env = replace(base, reason=reason)
@@ -81,8 +94,9 @@ def run_once(reg: Registry, card: TaskCard, worker_id: str, opts: RunOptions) ->
     timeout = int(opts.timeout_s or card.timeout_s or worker.timeout_s)
     adapter = get_adapter(worker.control)
     try:
-        inv = adapter.build(run_card, worker, prompt, prompt_file, str(cwd), timeout,
-                            allow_claude=opts.allow_claude, budget_usd=opts.budget_usd)
+        inv = adapter.build(
+            run_card, worker, prompt, prompt_file, str(cwd), timeout, allow_claude=opts.allow_claude, budget_usd=opts.budget_usd
+        )
         grace = 60 if worker.control == "acpx" else 0  # acpx enforces its own timeout first
         proc = run_process(inv.argv, cwd, log_dir, env=inv.env, timeout_s=timeout + grace, stdin_text=inv.stdin_text)
     except FleetError as e:
@@ -92,9 +106,16 @@ def run_once(reg: Registry, card: TaskCard, worker_id: str, opts: RunOptions) ->
         return env
     parsed = adapter.parse(proc)
     result = parse_fleet_result(parsed.reply) or {}
-    env = replace(base, log_dir=str(log_dir), duration_s=proc.duration_s, usage=parsed.usage,
-                  session_id=parsed.session_id, worker_status=result.get("status"),
-                  summary=str(result.get("summary") or parsed.reply[-300:]).strip(), worktree=wt_info)
+    env = replace(
+        base,
+        log_dir=str(log_dir),
+        duration_s=proc.duration_s,
+        usage=parsed.usage,
+        session_id=parsed.session_id,
+        worker_status=result.get("status"),
+        summary=str(result.get("summary") or parsed.reply[-300:]).strip(),
+        worktree=wt_info,
+    )
 
     quota = health.detect_quota("\n".join([parsed.reply, proc.stderr, parsed.error or ""]), worker.quota_patterns)
     if proc.timed_out or quota:  # partial work a stopped worker leaves behind is handed to the next one
@@ -150,8 +171,10 @@ def repair_card(card: TaskCard, env: Envelope) -> TaskCard:
     fails = [r for r in (env.verify or {}).get("results", []) if r["rc"] != 0]
     notes = "\n".join(f"$ {r['cmd']}\n{r['tail'][-1500:]}" for r in fails[:3])
     cwd = env.worktree["path"] if env.worktree else card.cwd
-    goal = (f"{card.goal}\n\nREPAIR: a previous attempt left changes in this tree but these done_when checks failed. "
-            f"Fix the cause (do not weaken or skip the checks), then re-run them.\n{notes}")
+    goal = (
+        f"{card.goal}\n\nREPAIR: a previous attempt left changes in this tree but these done_when checks failed. "
+        f"Fix the cause (do not weaken or skip the checks), then re-run them.\n{notes}"
+    )
     return replace(card, goal=goal, cwd=cwd, worktree=False)
 
 
@@ -159,9 +182,11 @@ def continue_card(card: TaskCard, env: Envelope) -> TaskCard:
     """Hand-over card: a worker stopped partway (error/timeout) after changing files; the next worker carries on
     in the same tree instead of starting over."""
     cwd = env.worktree["path"] if env.worktree else card.cwd
-    goal = (f"{card.goal}\n\nCONTINUE: a previous agent ({env.worker}) stopped partway ({env.reason[:300]}). "
-            f"Its changes are already in this tree ({', '.join(env.files_changed[:20])}). Check them, keep what is "
-            f"right and finish the goal.")
+    goal = (
+        f"{card.goal}\n\nCONTINUE: a previous agent ({env.worker}) stopped partway ({env.reason[:300]}). "
+        f"Its changes are already in this tree ({', '.join(env.files_changed[:20])}). Check them, keep what is "
+        f"right and finish the goal."
+    )
     return replace(card, goal=goal, cwd=cwd, worktree=False)
 
 

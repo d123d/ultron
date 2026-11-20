@@ -48,8 +48,14 @@ def test_unknown_key_rejected(tmp_path):
 
 
 def test_render_prompt_contract(tmp_path):
-    card = TaskCard(goal="do it", cwd=str(tmp_path), paths=["a.py", "b.py"], done_when=["pytest -q"],
-                    constraints=["no deps"], context_files=["spec.md"])
+    card = TaskCard(
+        goal="do it",
+        cwd=str(tmp_path),
+        paths=["a.py", "b.py"],
+        done_when=["pytest -q"],
+        constraints=["no deps"],
+        context_files=["spec.md"],
+    )
     text = render_prompt(card, None)
     assert "operated headlessly" in text and "touch only: a.py, b.py" in text
     assert "DONE WHEN these commands succeed:\n- pytest -q" in text
@@ -71,13 +77,15 @@ def test_parse_fleet_result():
     assert parse_fleet_result("") is None
 
 
-ACPX_LINES = "\n".join([
-    '{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"ses_x","update":{"sessionUpdate":"agent_message_chunk",'
-    '"messageId":"m1","content":{"type":"text","text":"OK"}}}}',
-    '{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"ses_x","update":{"sessionUpdate":"usage_update",'
-    '"used":11725,"size":131072,"cost":{"amount":0,"currency":"USD"}}}}',
-    '{"jsonrpc":"2.0","id":2,"result":{"stopReason":"end_turn","usage":{"inputTokens":11725,"outputTokens":1}}}',
-])
+ACPX_LINES = "\n".join(
+    [
+        '{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"ses_x","update":{"sessionUpdate":"agent_message_chunk",'
+        '"messageId":"m1","content":{"type":"text","text":"OK"}}}}',
+        '{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"ses_x","update":{"sessionUpdate":"usage_update",'
+        '"used":11725,"size":131072,"cost":{"amount":0,"currency":"USD"}}}}',
+        '{"jsonrpc":"2.0","id":2,"result":{"stopReason":"end_turn","usage":{"inputTokens":11725,"outputTokens":1}}}',
+    ]
+)
 
 
 def test_acpx_parse():
@@ -89,8 +97,9 @@ def test_acpx_parse():
 
 
 def test_agy_parse():
-    out = json.dumps({"conversation_id": "c1", "status": "SUCCESS", "response": "OK\n",
-                      "usage": {"input_tokens": 5, "output_tokens": 2}})
+    out = json.dumps(
+        {"conversation_id": "c1", "status": "SUCCESS", "response": "OK\n", "usage": {"input_tokens": 5, "output_tokens": 2}}
+    )
     r = AgyAdapter().parse(ProcResult(0, out, "", False, 1))
     assert r.reply == "OK" and r.session_id == "c1" and r.error is None and r.usage["output_tokens"] == 2
 
@@ -235,8 +244,9 @@ def test_worktree_links_ignored_dirs(env, repo):
     wt = Path(e.worktree["path"])
     assert (wt / "assets" / "big.bin").read_text() == "data"
     assert e.status == "ok" and e.worktree["commit"]
-    shown = subprocess.run(["git", "show", "--stat", "--format=", e.worktree["commit"]], cwd=wt,
-                           capture_output=True, text=True).stdout
+    shown = subprocess.run(
+        ["git", "show", "--stat", "--format=", e.worktree["commit"]], cwd=wt, capture_output=True, text=True
+    ).stdout
     assert "assets" not in shown
     # pruning the merged worktree removes only the links, never the main tree's assets
     subprocess.run(["git", "merge", "-q", e.worktree["branch"]], cwd=repo, check=True)
@@ -246,6 +256,7 @@ def test_worktree_links_ignored_dirs(env, repo):
 
 def test_empty_answer_cut_at_max_tokens_is_an_error():
     from ai_neural_network.llm import ProviderError, _text
+
     assert _text({"choices": [{"message": {"content": " hi "}, "finish_reason": "stop"}]}) == "hi"
     for empty in ({"content": ""}, {"content": None, "reasoning_content": "all thinking"}):
         with pytest.raises(ProviderError, match="empty answer"):

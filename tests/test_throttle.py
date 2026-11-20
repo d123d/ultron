@@ -83,8 +83,9 @@ def test_stale_in_flight_self_heals(tstate):
 
 def test_registry_throttle_section(tstate, tmp_path, monkeypatch):
     p = tmp_path / "w.yaml"
-    p.write_text(yaml.safe_dump({"throttle": {"default": {"min_interval_s": 5}, "x:1/y": {"max_concurrent": 7}}}),
-                 encoding="utf-8")
+    p.write_text(
+        yaml.safe_dump({"throttle": {"default": {"min_interval_s": 5}, "x:1/y": {"max_concurrent": 7}}}), encoding="utf-8"
+    )
     monkeypatch.setenv("FLEET_REGISTRY", str(p))
     reg = registry.load()
     assert reg.throttle["x:1/y"]["max_concurrent"] == 7
@@ -96,9 +97,13 @@ def test_registry_throttle_section(tstate, tmp_path, monkeypatch):
 
 
 def test_spread_order_prefers_idle_provider(tstate):
-    reg = Registry(workers={}, tiers={"a": Tier("a", "http://127.0.0.1:11/v1", "m", "free"),
-                                      "b": Tier("b", "http://127.0.0.1:22/v1", "m", "free")},
-                   cost_order=["free"], chains={}, board={})
+    reg = Registry(
+        workers={},
+        tiers={"a": Tier("a", "http://127.0.0.1:11/v1", "m", "free"), "b": Tier("b", "http://127.0.0.1:22/v1", "m", "free")},
+        cost_order=["free"],
+        chains={},
+        board={},
+    )
     now = time.monotonic()
     throttle._save({"127.0.0.1:11/v1": {"starts": [now], "last_start": now}})  # provider 11 is hot
     assert spread_order(reg, ["a", "b"]) == ["b", "a"]

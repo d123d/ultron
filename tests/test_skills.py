@@ -6,6 +6,7 @@ import yaml
 
 ROOT = Path(__file__).parent.parent
 
+
 def test_skills_installed_and_registered():
     cfg = yaml.safe_load((ROOT / "config" / "skills.yaml").read_text())["skills"]
     assert set(cfg) == {"ponytail", "caveman", "find-skills", "openrouter-typescript-sdk", "mmx-cli", "cloud-providers"}

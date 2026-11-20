@@ -1,4 +1,5 @@
 """Git worktree isolation so parallel workers never share a checkout."""
+
 from __future__ import annotations
 
 import os
@@ -53,8 +54,9 @@ _SKIP_PARTS = {".fleet", ".git", ".claude", ".ai-locks", "__pycache__", ".pytest
 def ignored_entries(root: Path) -> list[str]:
     """Git-ignored paths of the main checkout (dirs end with '/'), minus caches, locks and other worktrees."""
     out = _git(root, "ls-files", "--others", "--ignored", "--exclude-standard", "--directory", check=False)
-    return [e for e in (line.strip() for line in out.splitlines())
-            if e and not _SKIP_PARTS.intersection(e.rstrip("/").split("/"))]
+    return [
+        e for e in (line.strip() for line in out.splitlines()) if e and not _SKIP_PARTS.intersection(e.rstrip("/").split("/"))
+    ]
 
 
 def _link(src: Path, dst: Path) -> bool:

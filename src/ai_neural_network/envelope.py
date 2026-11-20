@@ -1,4 +1,5 @@
 """Result envelope returned for every fleet run, plus the worker FLEET_RESULT line parser."""
+
 from __future__ import annotations
 
 import json

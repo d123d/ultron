@@ -24,8 +24,13 @@ class _Stub(BaseHTTPRequestHandler):
     def do_POST(self):  # noqa: N802
         _Stub.bodies.append(json.loads(self.rfile.read(int(self.headers["Content-Length"]))))
         _Stub.seen.append({k.lower(): v for k, v in self.headers.items()})
-        body = json.dumps({"model": "stub", "choices": [{"message": {"content": _Stub.replies.pop(0)}}],
-                           "usage": {"prompt_tokens": 3, "completion_tokens": 2}}).encode()
+        body = json.dumps(
+            {
+                "model": "stub",
+                "choices": [{"message": {"content": _Stub.replies.pop(0)}}],
+                "usage": {"prompt_tokens": 3, "completion_tokens": 2},
+            }
+        ).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.end_headers()
@@ -70,8 +75,10 @@ def hot_and_stub(env):
         threading.Thread(target=s.serve_forever, daemon=True).start()
     path, _ = env
     data = yaml.safe_load(path.read_text())
-    data["tiers"] = {"hot": {"base_url": f"http://127.0.0.1:{hot.server_port}/v1", "model": "m", "cost": "free"},
-                     "t": {"base_url": f"http://127.0.0.1:{srv.server_port}/v1", "model": "m", "cost": "free"}}
+    data["tiers"] = {
+        "hot": {"base_url": f"http://127.0.0.1:{hot.server_port}/v1", "model": "m", "cost": "free"},
+        "t": {"base_url": f"http://127.0.0.1:{srv.server_port}/v1", "model": "m", "cost": "free"},
+    }
     path.write_text(yaml.safe_dump(data))
     yield
     hot.shutdown()
@@ -93,8 +100,9 @@ def stub_session(env):
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     path, _ = env
     data = yaml.safe_load(path.read_text())
-    data["tiers"] = {"t": {"base_url": f"http://127.0.0.1:{srv.server_port}/v1", "model": "m",
-                           "cost": "free", "session_header": True}}
+    data["tiers"] = {
+        "t": {"base_url": f"http://127.0.0.1:{srv.server_port}/v1", "model": "m", "cost": "free", "session_header": True}
+    }
     path.write_text(yaml.safe_dump(data))
     yield
     srv.shutdown()
@@ -158,6 +166,7 @@ def test_ask_unreachable_tier_falls_back(env, tmp_path):
 
 def test_ask_skips_strata_tiers_during_timed_test(stub, env, tmp_path, monkeypatch):
     from ai_neural_network import llm
+
     lock = tmp_path / "strata-testing.lock"
     lock.write_text("test", encoding="utf-8")
     # dead port stands in for Strata, so a broken filter fails as "unreachable", never hits the real engine
@@ -342,9 +351,11 @@ def test_spent_free_quota_parks_every_free_sibling(env, monkeypatch):
     path, _ = env
     data = yaml.safe_load(path.read_text())
     hb = f"http://127.0.0.1:{hot.server_port}/v1"
-    data["tiers"] = {"f1": {"base_url": hb, "model": "a:free", "cost": "free"},
-                     "f2": {"base_url": hb, "model": "b:free", "cost": "free"},
-                     "t": {"base_url": f"http://127.0.0.1:{srv.server_port}/v1", "model": "m", "cost": "free"}}
+    data["tiers"] = {
+        "f1": {"base_url": hb, "model": "a:free", "cost": "free"},
+        "f2": {"base_url": hb, "model": "b:free", "cost": "free"},
+        "t": {"base_url": f"http://127.0.0.1:{srv.server_port}/v1", "model": "m", "cost": "free"},
+    }
     path.write_text(yaml.safe_dump(data))
     monkeypatch.setattr(llm, "_free_daily_reset_s", lambda tier: 3600)
     monkeypatch.setattr(llm, "spread_order", lambda reg, ids: ids)
@@ -381,8 +392,10 @@ def test_cli_tier_answers_through_agy(env, monkeypatch):
 
     path, _ = env
     data = yaml.safe_load(path.read_text())
-    data["tiers"] = {"g": {"base_url": "agy://google", "cli": "agy", "model": "gemini-x", "cost": "flat"},
-                     "t": {"base_url": "http://127.0.0.1:1/v1", "model": "m", "cost": "free"}}
+    data["tiers"] = {
+        "g": {"base_url": "agy://google", "cli": "agy", "model": "gemini-x", "cost": "flat"},
+        "t": {"base_url": "http://127.0.0.1:1/v1", "model": "m", "cost": "free"},
+    }
     path.write_text(yaml.safe_dump(data))
     monkeypatch.setattr(adapters, "_exe", lambda name: name)
     seen, out = [], {}

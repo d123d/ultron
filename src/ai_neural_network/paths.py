@@ -16,11 +16,7 @@ def config_dir() -> Path:
 
 
 def state_dir() -> Path:
-    return Path(
-        os.environ.get("BRAIN_STATE_DIR")
-        or os.environ.get("FLEET_STATE_DIR")
-        or r"C:\AI\state\ai-neural-network"
-    )
+    return Path(os.environ.get("BRAIN_STATE_DIR") or os.environ.get("FLEET_STATE_DIR") or r"C:\AI\state\ai-neural-network")
 
 
 def runs_dir() -> Path:
@@ -44,8 +40,4 @@ def weights_path() -> Path:
 
 
 def registry_path() -> Path:
-    return Path(
-        os.environ.get("BRAIN_REGISTRY")
-        or os.environ.get("FLEET_REGISTRY")
-        or Path(__file__).with_name("workers.yaml")
-    )
+    return Path(os.environ.get("BRAIN_REGISTRY") or os.environ.get("FLEET_REGISTRY") or Path(__file__).with_name("workers.yaml"))

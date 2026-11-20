@@ -4,6 +4,7 @@ Provider slot: one entry per upstream provider (every tier that shares an endpoi
 concurrency and the list of models it serves (configured tiers + the provider's live /models list).
 Job slot: a kind of work (config/jobs.yaml) mapped to an ordered list of models, tried in order.
 """
+
 from __future__ import annotations
 
 import json
@@ -43,11 +44,20 @@ def provider_slots(reg: Registry) -> list[dict[str, Any]]:
     slots: dict[str, dict[str, Any]] = {}
     for t in reg.tiers.values():
         name = provider_name(t)
-        s = slots.setdefault(name, {"provider": name, "base_url": t.base_url, "via": t.cli or t.adapter or "http",
-                                    "cost": t.cost, "key_env": t.key_env or "-",
-                                    "key_present": None if not t.key_env else bool(_secret_or_none(t.key_env)),
-                                    "slots": int(config_for(reg, t.base_url)["max_concurrent"]),
-                                    "tiers": [], "models": []})
+        s = slots.setdefault(
+            name,
+            {
+                "provider": name,
+                "base_url": t.base_url,
+                "via": t.cli or t.adapter or "http",
+                "cost": t.cost,
+                "key_env": t.key_env or "-",
+                "key_present": None if not t.key_env else bool(_secret_or_none(t.key_env)),
+                "slots": int(config_for(reg, t.base_url)["max_concurrent"]),
+                "tiers": [],
+                "models": [],
+            },
+        )
         s["tiers"].append(t.id)
         if t.model not in s["models"]:
             s["models"].append(t.model)
@@ -109,10 +119,27 @@ def harness_slots(reg: Registry) -> list[dict[str, Any]]:
     for w in reg.workers.values():
         until = health.cooldown_until(w.id)
         installed = bool(shutil.which(w.probe[0])) if w.probe else True
-        state = ("disabled" if not w.enabled else "not installed" if not installed else
-                 f"cooldown until {health.iso(until)}" if until else "opt-in" if w.opt_in else "ready")
-        rows.append({"harness": w.id, "via": w.control, "cost": w.cost, "slots": w.max_parallel, "state": state,
-                     "jobs": ",".join(w.capabilities)})
+        state = (
+            "disabled"
+            if not w.enabled
+            else "not installed"
+            if not installed
+            else f"cooldown until {health.iso(until)}"
+            if until
+            else "opt-in"
+            if w.opt_in
+            else "ready"
+        )
+        rows.append(
+            {
+                "harness": w.id,
+                "via": w.control,
+                "cost": w.cost,
+                "slots": w.max_parallel,
+                "state": state,
+                "jobs": ",".join(w.capabilities),
+            }
+        )
     return rows
 
 
@@ -127,8 +154,9 @@ def refresh_models(reg: Registry, timeout_s: float = 20) -> dict[str, Any]:
         if not key:
             continue
         seen.add(name)
-        req = urllib.request.Request(f"{t.base_url.rstrip('/')}/models",
-                                     headers={"Authorization": f"Bearer {key}", "User-Agent": _UA})
+        req = urllib.request.Request(
+            f"{t.base_url.rstrip('/')}/models", headers={"Authorization": f"Bearer {key}", "User-Agent": _UA}
+        )
         try:
             with urllib.request.urlopen(req, timeout=timeout_s) as r:
                 data = json.loads(r.read())
@@ -173,9 +201,19 @@ def _by_results(kind: str, tiers: list[str]) -> list[str]:
     return sorted(tiers, key=lambda t: len(tries.get(t, [])) >= 3 and not any(tries[t][-3:]))
 
 
-def run_job(reg: Registry, kind: str, prompt: str, *, cwd: str | None = None, done_when: list[str] | None = None,
-            system: str | None = None, images: list[str] | tuple = (), files: list[str] | tuple = (),
-            timeout_s: int | None = None, allow_claude: bool = False) -> dict[str, Any]:
+def run_job(
+    reg: Registry,
+    kind: str,
+    prompt: str,
+    *,
+    cwd: str | None = None,
+    done_when: list[str] | None = None,
+    system: str | None = None,
+    images: list[str] | tuple = (),
+    files: list[str] | tuple = (),
+    timeout_s: int | None = None,
+    allow_claude: bool = False,
+) -> dict[str, Any]:
     """Do one piece of work in a job slot: the slot's models in order (ask/vote) or its worker chain (run)."""
     jobs = load_jobs()
     if kind not in jobs:
@@ -187,8 +225,9 @@ def run_job(reg: Registry, kind: str, prompt: str, *, cwd: str | None = None, do
     start = time.monotonic()
 
     def done(status: str, by: str, **extra) -> dict[str, Any]:
-        ledger.append({"type": "job", "job": kind, "tier": by, "status": status,
-                       "duration_s": round(time.monotonic() - start, 2)})
+        ledger.append(
+            {"type": "job", "job": kind, "tier": by, "status": status, "duration_s": round(time.monotonic() - start, 2)}
+        )
         return {"job": kind, "mode": mode, "status": status, "by": by, **extra}
 
     if mode == "run":
@@ -197,8 +236,9 @@ def run_job(reg: Registry, kind: str, prompt: str, *, cwd: str | None = None, do
 
         card = TaskCard(goal=prompt, cwd=cwd or "", capability=job["capability"], done_when=list(done_when or []))
         env = run_card(reg, card, job.get("worker", "auto"), RunOptions(allow_claude=allow_claude, timeout_s=timeout_s))
-        return done(env.status, env.worker, text=env.summary, reason=env.reason, files_changed=env.files_changed,
-                    log=str(env.log_dir))
+        return done(
+            env.status, env.worker, text=env.summary, reason=env.reason, files_changed=env.files_changed, log=str(env.log_dir)
+        )
     if mode == "vote":
         r = vote(reg, ",".join(job_specs(reg, job["tiers"])), prompt, system=system, files=files, timeout_s=timeout_s)
         return done("ok", r.tier, text=r.data["answer"], votes=r.data["votes"])
@@ -221,27 +261,38 @@ QC_PROMPT = (
     "Render QC for a 3D film asset{subject}. FAIL when the picture is unusable: mostly one flat colour or "
     "gradient, camera inside or pressed against geometry, black or empty frame, magenta missing-texture surfaces, "
     "or the subject cannot be recognised. Minor roughness is a PASS. Reply in two lines: what is shown, then "
-    "exactly 'VERDICT: PASS' or 'VERDICT: FAIL - <reason>'.")
+    "exactly 'VERDICT: PASS' or 'VERDICT: FAIL - <reason>'."
+)
 
 
 def qc_images(reg: Registry, root: str, *, since_min: int = 180, limit: int = 8, subject: str = "") -> dict[str, Any]:
     """Look at the newest renders under root with the vision job slot. A check command for cards whose worker
     cannot see its own pictures: blind harnesses reported unusable renders as done (2026-11-15)."""
     cutoff = time.time() - since_min * 60
-    files = sorted((p for p in Path(root).rglob("*") if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp")
-                    and ".git" not in p.parts and p.stat().st_mtime >= cutoff),
-                   key=lambda p: -p.stat().st_mtime)[:limit]
+    files = sorted(
+        (
+            p
+            for p in Path(root).rglob("*")
+            if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp") and ".git" not in p.parts and p.stat().st_mtime >= cutoff
+        ),
+        key=lambda p: -p.stat().st_mtime,
+    )[:limit]
     rows = []
     for f in files:
         try:
-            text = run_job(reg, "vision", QC_PROMPT.format(subject=f" ({subject})" if subject else ""),
-                           images=[str(f)], timeout_s=240)["text"]
+            text = run_job(
+                reg, "vision", QC_PROMPT.format(subject=f" ({subject})" if subject else ""), images=[str(f)], timeout_s=240
+            )["text"]
         except FleetError as e:  # no eye available is not a pass
             text = f"VERDICT: FAIL - vision job unavailable: {str(e)[:120]}"
         rows.append({"file": str(f), "pass": "VERDICT: PASS" in text.upper(), "note": text.strip()[-300:]})
     ok = bool(rows) and all(r["pass"] for r in rows)
-    return {"ok": ok, "checked": len(rows), "results": rows,
-            "reason": "" if rows else f"no image newer than {since_min} min under {root}"}
+    return {
+        "ok": ok,
+        "checked": len(rows),
+        "results": rows,
+        "reason": "" if rows else f"no image newer than {since_min} min under {root}",
+    }
 
 
 def _pid_alive(pid: int) -> bool:
@@ -286,10 +337,21 @@ def daemon(interval_s: int = 60, once: bool = False) -> None:
         last_sleep = json.loads(hb.read_text(encoding="utf-8")).get("last_sleep", "")
     except (OSError, ValueError):
         last_sleep = ""
+
     def beat(note: str, state: str) -> None:
-        hb.write_text(json.dumps({"pid": os.getpid(), "ts": datetime.now(UTC).isoformat(timespec="seconds"),
-                                  "state": state, "processed": processed, "last_error": note,
-                                  "last_sleep": last_sleep}), encoding="utf-8")
+        hb.write_text(
+            json.dumps(
+                {
+                    "pid": os.getpid(),
+                    "ts": datetime.now(UTC).isoformat(timespec="seconds"),
+                    "state": state,
+                    "processed": processed,
+                    "last_error": note,
+                    "last_sleep": last_sleep,
+                }
+            ),
+            encoding="utf-8",
+        )
 
     while True:
         note = ""

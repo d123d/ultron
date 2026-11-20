@@ -1,4 +1,5 @@
 """Task board backed by beads (bd): dependency-aware ready queue with atomic claims. Cards live in issue descriptions."""
+
 from __future__ import annotations
 
 import json
@@ -27,8 +28,9 @@ class Board:
             argv += ["--actor", actor]
         env = {**os.environ, "BD_NON_INTERACTIVE": "1"}
         try:
-            p = subprocess.run(argv, cwd=str(self.dir), capture_output=True, text=True, encoding="utf-8",
-                               errors="replace", env=env, timeout=120)
+            p = subprocess.run(
+                argv, cwd=str(self.dir), capture_output=True, text=True, encoding="utf-8", errors="replace", env=env, timeout=120
+            )
         except FileNotFoundError:
             raise FleetError(f"beads not found at {self.bd}") from None
         if check and p.returncode != 0:
@@ -43,8 +45,14 @@ class Board:
         self.dir.mkdir(parents=True, exist_ok=True)
         if not (self.dir / ".beads").exists():
             env = {**os.environ, "BD_NON_INTERACTIVE": "1"}
-            p = subprocess.run([self.bd, "init", "--prefix", self.prefix], cwd=str(self.dir), capture_output=True,
-                               text=True, env=env, timeout=120)
+            p = subprocess.run(
+                [self.bd, "init", "--prefix", self.prefix],
+                cwd=str(self.dir),
+                capture_output=True,
+                text=True,
+                env=env,
+                timeout=120,
+            )
             if p.returncode != 0:
                 raise FleetError(f"bd init failed: {(p.stderr or p.stdout).strip()[:300]}")
         return self.dir

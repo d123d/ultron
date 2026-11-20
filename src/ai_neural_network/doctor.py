@@ -1,4 +1,5 @@
 """Live health table for every worker and tier."""
+
 from __future__ import annotations
 
 import json
@@ -21,8 +22,9 @@ def _probe(argv: list[str]) -> tuple[bool, str]:
     if not exe:
         return False, "not installed"
     try:
-        p = subprocess.run([exe, *argv[1:]], capture_output=True, text=True, timeout=20,
-                           shell=exe.lower().endswith((".cmd", ".bat")))
+        p = subprocess.run(
+            [exe, *argv[1:]], capture_output=True, text=True, timeout=20, shell=exe.lower().endswith((".cmd", ".bat"))
+        )
         line = (p.stdout or p.stderr).strip().splitlines()
         return p.returncode == 0, line[0][:80] if line else f"exit {p.returncode}"
     except (OSError, subprocess.SubprocessError) as e:
@@ -106,13 +108,32 @@ def doctor(reg: Registry, live: bool = False, catalog: bool = False) -> list[dic
             except FleetError as e:
                 ok, note = False, str(e)
         until = health.cooldown_until(w.id)
-        rows.append({"id": w.id, "kind": "agent", "cost": w.cost, "control": w.control, "enabled": w.enabled,
-                     "opt_in": w.opt_in, "ok": ok and w.enabled, "version": version,
-                     "cooldown_until": health.iso(until) if until else None, "note": note or w.notes[:60]})
+        rows.append(
+            {
+                "id": w.id,
+                "kind": "agent",
+                "cost": w.cost,
+                "control": w.control,
+                "enabled": w.enabled,
+                "opt_in": w.opt_in,
+                "ok": ok and w.enabled,
+                "version": version,
+                "cooldown_until": health.iso(until) if until else None,
+                "note": note or w.notes[:60],
+            }
+        )
     for t in reg.tiers.values():
         until = health.cooldown_until(t.id)
-        row = {"id": t.id, "kind": "tier", "cost": t.cost, "control": t.cli or "http", "enabled": True, "opt_in": False,
-               "model": t.model, "cooldown_until": health.iso(until) if until else None}
+        row = {
+            "id": t.id,
+            "kind": "tier",
+            "cost": t.cost,
+            "control": t.cli or "http",
+            "enabled": True,
+            "opt_in": False,
+            "model": t.model,
+            "cooldown_until": health.iso(until) if until else None,
+        }
         if live:
             start = time.monotonic()
             try:
@@ -149,8 +170,16 @@ def provider_rows(reg: Registry) -> list[dict]:
 
     rows = []
     for t in reg.tiers.values():
-        rows.append({"id": t.id, "provider": t.catalog or t.adapter or t.base_url.split("/")[0],
-                     "model": t.model, "cost": t.cost, "adapter": t.adapter or "-",
-                     "key_env": t.key_env or "-", "key_present": (None if not t.key_env else bool(_secret_or_none(t.key_env))),
-                     "cooldown_until": health.iso(u) if (u := health.cooldown_until(t.id)) else None})
+        rows.append(
+            {
+                "id": t.id,
+                "provider": t.catalog or t.adapter or t.base_url.split("/")[0],
+                "model": t.model,
+                "cost": t.cost,
+                "adapter": t.adapter or "-",
+                "key_env": t.key_env or "-",
+                "key_present": (None if not t.key_env else bool(_secret_or_none(t.key_env))),
+                "cooldown_until": health.iso(u) if (u := health.cooldown_until(t.id)) else None,
+            }
+        )
     return rows

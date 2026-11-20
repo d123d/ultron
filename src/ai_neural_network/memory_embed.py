@@ -3,6 +3,7 @@
 Plain ledger rows are chronological; this layer answers "episodes like this one".
 Vectors live in state/embeddings.jsonl beside the ledger. Cosine similarity, stdlib only.
 """
+
 from __future__ import annotations
 
 import json

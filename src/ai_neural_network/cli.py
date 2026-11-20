@@ -1,4 +1,5 @@
 """brain CLI: brain-structured AI orchestration across cortical regions and workers."""
+
 from __future__ import annotations
 
 import argparse
@@ -441,16 +442,17 @@ def _dispatch(args) -> int:
 
     if args.cmd == "sleep":
         result = net.sleep(decay=args.decay, prune_below=args.prune_below)
-        msg = (f"sleep: decayed all weights by {args.decay}; pruned {len(result['pruned'])} synapses; "
-               f"weights -> {result['weights_saved']}")
+        msg = (
+            f"sleep: decayed all weights by {args.decay}; pruned {len(result['pruned'])} synapses; "
+            f"weights -> {result['weights_saved']}"
+        )
         _out(result, args.json, msg)
         return 0
 
     if args.cmd == "sync" and args.add:
         from .scaffold import add_neuron
 
-        data = add_neuron(args.add, region=args.region, capabilities=args.capability or ["text"],
-                          config_dir=args.config)
+        data = add_neuron(args.add, region=args.region, capabilities=args.capability or ["text"], config_dir=args.config)
         _out(data, args.json, f"neuron {args.add} scaffolded in {data['neurons_file']} (+ synapse main->{args.add})")
         return 0
 
@@ -543,8 +545,7 @@ def _dispatch(args) -> int:
             raise FleetError("give a prompt or --prompt-file")
         schema = json.loads(Path(args.schema).read_text(encoding="utf-8")) if args.schema else None
         if args.stream:
-            for delta in ask_stream(reg, args.tier, prompt, system=args.system, timeout_s=args.timeout,
-                                    private=args.private):
+            for delta in ask_stream(reg, args.tier, prompt, system=args.system, timeout_s=args.timeout, private=args.private):
                 sys.stdout.write(delta)
                 sys.stdout.flush()
             print()
@@ -589,10 +590,7 @@ def _dispatch(args) -> int:
         tiers = [t.strip() for t in args.tiers.split(",") if t.strip()]
         only = args.only.split(",") if args.only else None
         rows = evaluate(reg, tiers, only=only, timeout_s=args.timeout)
-        table_rows = [
-            {**r, "score": f"{r['score']}/{r['n']}", "misses": "; ".join(r["misses"])[:120]}
-            for r in rows
-        ]
+        table_rows = [{**r, "score": f"{r['score']}/{r['n']}", "misses": "; ".join(r["misses"])[:120]} for r in rows]
         _out(rows, args.json, _table(table_rows, ["tier", "model", "score", "median_s", "misses"]))
         return 0
 
@@ -618,21 +616,34 @@ def _dispatch(args) -> int:
             return 0
         table = [{**r, "tiers": ",".join(r["tiers"])[:70], "cooled": ",".join(r["cooled"])} for r in rows]
         harness = slots.harness_slots(reg)
-        _out({"providers": rows, "harnesses": harness}, args.json,
-             _table(table, ["provider", "via", "cost", "slots", "key_present", "n_models", "tiers", "cooled"])
-             + "\n\n" + _table(harness, ["harness", "via", "cost", "slots", "state", "jobs"]))
+        _out(
+            {"providers": rows, "harnesses": harness},
+            args.json,
+            _table(table, ["provider", "via", "cost", "slots", "key_present", "n_models", "tiers", "cooled"])
+            + "\n\n"
+            + _table(harness, ["harness", "via", "cost", "slots", "state", "jobs"]),
+        )
         return 0
 
     if args.cmd == "jobs":
         from . import slots
 
         jobs = slots.load_jobs()
-        rows = [{"job": k, "mode": j.get("mode", "ask"),
-                 "models": ",".join(j.get("tiers") or [j.get("worker") or f"workers:{j.get('capability')}"]),
-                 "note": j.get("note", "")[:70]} for k, j in jobs.items()]
+        rows = [
+            {
+                "job": k,
+                "mode": j.get("mode", "ask"),
+                "models": ",".join(j.get("tiers") or [j.get("worker") or f"workers:{j.get('capability')}"]),
+                "note": j.get("note", "")[:70],
+            }
+            for k, j in jobs.items()
+        ]
         bad = slots.check_jobs(reg)
-        _out({"jobs": jobs, "errors": bad}, args.json,
-             _table(rows, ["job", "mode", "models", "note"]) + "".join(f"\nCONFIG ERROR {b}" for b in bad))
+        _out(
+            {"jobs": jobs, "errors": bad},
+            args.json,
+            _table(rows, ["job", "mode", "models", "note"]) + "".join(f"\nCONFIG ERROR {b}" for b in bad),
+        )
         return 1 if bad else 0
 
     if args.cmd == "job":
@@ -641,8 +652,18 @@ def _dispatch(args) -> int:
         prompt = Path(args.prompt_file).read_text(encoding="utf-8") if args.prompt_file else args.prompt
         if not prompt:
             raise FleetError("give a prompt or --prompt-file")
-        data = slots.run_job(reg, args.kind, prompt, cwd=args.cwd, done_when=args.done_when, system=args.system,
-                             files=args.file, images=args.image, timeout_s=args.timeout, allow_claude=args.allow_claude)
+        data = slots.run_job(
+            reg,
+            args.kind,
+            prompt,
+            cwd=args.cwd,
+            done_when=args.done_when,
+            system=args.system,
+            files=args.file,
+            images=args.image,
+            timeout_s=args.timeout,
+            allow_claude=args.allow_claude,
+        )
         _out(data, args.json, f"[{data['job']} -> {data['by']}: {data['status']}]\n{data.get('text') or data.get('reason')}")
         return 0 if data["status"] == "ok" else 1
 
@@ -670,19 +691,31 @@ def _dispatch(args) -> int:
             net.save_weights()
         data = {"rows": rows, "applied": changed}
         table_rows = [{**r, "score": f"{r['score']}/{r['n']}", "misses": "; ".join(r["misses"])[:100]} for r in rows]
-        _out(data, args.json, _table(table_rows, ["tier", "model", "score", "median_s", "misses"]) +
-             (f"\napplied to {len(changed)} synapses" if args.apply else ""))
+        _out(
+            data,
+            args.json,
+            _table(table_rows, ["tier", "model", "score", "median_s", "misses"])
+            + (f"\napplied to {len(changed)} synapses" if args.apply else ""),
+        )
         return 0
 
     if args.cmd == "spend":
         from .costs import modulation, spend_today
 
         per = spend_today(reg)
-        data = {"per_tier_usd": per, "total_usd": round(sum(per.values()), 6), "budget_usd": args.budget,
-                "modulation": round(modulation(reg, args.budget), 3)}
+        data = {
+            "per_tier_usd": per,
+            "total_usd": round(sum(per.values()), 6),
+            "budget_usd": args.budget,
+            "modulation": round(modulation(reg, args.budget), 3),
+        }
         rows = [{"tier": k, "usd": v} for k, v in sorted(per.items(), key=lambda kv: -kv[1])]
-        _out(data, args.json, _table(rows, ["tier", "usd"]) +
-             f"\ntotal ${data['total_usd']} of ${args.budget} budget; learn modulation x{data['modulation']}")
+        _out(
+            data,
+            args.json,
+            _table(rows, ["tier", "usd"])
+            + f"\ntotal ${data['total_usd']} of ${args.budget} budget; learn modulation x{data['modulation']}",
+        )
         return 0
 
     if args.cmd == "remember":

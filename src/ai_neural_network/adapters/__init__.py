@@ -1,4 +1,5 @@
 """Worker control adapters: build the command for a worker and parse its output."""
+
 from __future__ import annotations
 
 import json
@@ -70,8 +71,9 @@ def acpx_entry() -> str:
 
 
 class Adapter:
-    def build(self, card: TaskCard, worker: Worker, prompt: str, prompt_file: Path, cwd: str, timeout_s: int,
-              **opts: Any) -> Invocation:
+    def build(
+        self, card: TaskCard, worker: Worker, prompt: str, prompt_file: Path, cwd: str, timeout_s: int, **opts: Any
+    ) -> Invocation:
         raise NotImplementedError
 
     def parse(self, proc: ProcResult) -> AdapterResult:
@@ -82,8 +84,21 @@ class AcpxAdapter(Adapter):
     def build(self, card, worker, prompt, prompt_file, cwd, timeout_s, **opts):
         if not worker.acpx_agent:
             raise FleetError(f"worker {worker.id} has control acpx but no acpx_agent")
-        argv = [_exe("node"), acpx_entry(), "--format", "json", "--approve-all", "--cwd", cwd,
-                "--timeout", str(timeout_s), worker.acpx_agent, "exec", "-f", str(prompt_file)]
+        argv = [
+            _exe("node"),
+            acpx_entry(),
+            "--format",
+            "json",
+            "--approve-all",
+            "--cwd",
+            cwd,
+            "--timeout",
+            str(timeout_s),
+            worker.acpx_agent,
+            "exec",
+            "-f",
+            str(prompt_file),
+        ]
         return Invocation(argv)
 
     def parse(self, proc):
@@ -139,9 +154,12 @@ class AgyAdapter(Adapter):
             return AdapterResult(reply=text, error="agy output was not valid JSON")
         usage = data.get("usage") or {}
         err = data.get("error") or (None if data.get("status") == "SUCCESS" else data.get("status"))
-        return AdapterResult(reply=(data.get("response") or "").strip(), session_id=data.get("conversation_id"),
-                             usage={"input_tokens": usage.get("input_tokens"), "output_tokens": usage.get("output_tokens")},
-                             error=err or None)
+        return AdapterResult(
+            reply=(data.get("response") or "").strip(),
+            session_id=data.get("conversation_id"),
+            usage={"input_tokens": usage.get("input_tokens"), "output_tokens": usage.get("output_tokens")},
+            error=err or None,
+        )
 
 
 class ClaudeAdapter(Adapter):
@@ -149,8 +167,18 @@ class ClaudeAdapter(Adapter):
         if not opts.get("allow_claude"):
             raise FleetError("claude is operator-only; pass --allow-claude to use it as a worker")
         budget = float(opts.get("budget_usd") or 1.0)
-        argv = [_exe("claude"), "-p", "--output-format", "json", "--permission-mode", "acceptEdits",
-                "--max-turns", "40", "--max-budget-usd", f"{budget:g}"]
+        argv = [
+            _exe("claude"),
+            "-p",
+            "--output-format",
+            "json",
+            "--permission-mode",
+            "acceptEdits",
+            "--max-turns",
+            "40",
+            "--max-budget-usd",
+            f"{budget:g}",
+        ]
         return Invocation(argv, stdin_text=prompt)
 
     def parse(self, proc):
@@ -159,9 +187,12 @@ class ClaudeAdapter(Adapter):
             data = json.loads(text[text.find("{") : text.rfind("}") + 1])
         except ValueError:
             return AdapterResult(reply=text, error=proc.stderr.strip()[-500:] or "claude output was not JSON")
-        return AdapterResult(reply=str(data.get("result") or "").strip(), session_id=data.get("session_id"),
-                             usage={"cost_usd": data.get("total_cost_usd")},
-                             error=str(data.get("result"))[:500] if data.get("is_error") else None)
+        return AdapterResult(
+            reply=str(data.get("result") or "").strip(),
+            session_id=data.get("session_id"),
+            usage={"cost_usd": data.get("total_cost_usd")},
+            error=str(data.get("result"))[:500] if data.get("is_error") else None,
+        )
 
 
 class CommandAdapter(Adapter):
@@ -172,8 +203,12 @@ class CommandAdapter(Adapter):
         return Invocation(argv)
 
 
-_ADAPTERS: dict[str, Adapter] = {"acpx": AcpxAdapter(), "agy": AgyAdapter(), "claude": ClaudeAdapter(),
-                                 "command": CommandAdapter()}
+_ADAPTERS: dict[str, Adapter] = {
+    "acpx": AcpxAdapter(),
+    "agy": AgyAdapter(),
+    "claude": ClaudeAdapter(),
+    "command": CommandAdapter(),
+}
 
 
 def get_adapter(control: str) -> Adapter:

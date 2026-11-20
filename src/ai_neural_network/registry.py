@@ -1,4 +1,5 @@
 """Worker registry: agents, LLM tiers, routing chains and board settings, loaded from workers.yaml."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, fields
@@ -100,12 +101,15 @@ def load(path: str | Path | None = None) -> Registry:
     for pkey, pcfg in throttle.items():
         if not isinstance(pcfg, dict) or set(pcfg) - _THROTTLE_KEYS:
             raise ValueError(f"bad throttle config for {pkey}")
-    return Registry(workers=workers, tiers=tiers,
-                    cost_order=list(routing.get("cost_order") or ["free", "flat", "metered", "claude"]),
-                    chains={k: list(v) for k, v in (routing.get("chains") or {}).items()},
-                    board=dict(data.get("board") or {}),
-                    throttle={k: dict(v) for k, v in throttle.items()},
-                    quota_patterns=list(defaults.get("quota_patterns") or []))
+    return Registry(
+        workers=workers,
+        tiers=tiers,
+        cost_order=list(routing.get("cost_order") or ["free", "flat", "metered", "claude"]),
+        chains={k: list(v) for k, v in (routing.get("chains") or {}).items()},
+        board=dict(data.get("board") or {}),
+        throttle={k: dict(v) for k, v in throttle.items()},
+        quota_patterns=list(defaults.get("quota_patterns") or []),
+    )
 
 
 _LOCAL_PROVIDERS = {":47831": "strata", ":8790": "model-gate", ":4097": "zen-bridge"}

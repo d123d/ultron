@@ -1,4 +1,5 @@
 """Cut-off retry, busy fallback, private asks, voting, CLI routes, batch asks, usage, doctor probes, eval grading."""
+
 import json
 import subprocess as sp
 from datetime import UTC, datetime, timedelta
@@ -65,6 +66,7 @@ def test_private_uses_only_local_tiers(env, monkeypatch, tmp_path):
     with pytest.raises(FleetError, match="no local tier"):
         llm.ask(registry.load(), "cloud", "secret", private=True)
 
+
 def test_vote_returns_majority_short_answer(env, monkeypatch):
     _tiers(env, {"a": _http(1), "b": _http(2), "c": _http(3)})
     said = {"a": "work...\nANSWER: 42", "b": "ANSWER: **42.**", "c": "ANSWER: 41"}
@@ -121,8 +123,10 @@ def test_ask_many_runs_agy_once_for_all_prompts(env, monkeypatch):
 
 def test_ledger_usage_windows_and_quota_hits():
     at = datetime(2026, 11, 6, 12, tzinfo=UTC)
-    rows = [{"ts": (at - timedelta(days=d)).isoformat(), "type": "ask", "tier": "t", "status": s, "error": e}
-            for d, s, e in ((0, "ok", ""), (3, "error", "HTTP 429 slow down"), (20, "ok", ""), (40, "ok", ""))]
+    rows = [
+        {"ts": (at - timedelta(days=d)).isoformat(), "type": "ask", "tier": "t", "status": s, "error": e}
+        for d, s, e in ((0, "ok", ""), (3, "error", "HTTP 429 slow down"), (20, "ok", ""), (40, "ok", ""))
+    ]
     u = ledger.usage(rows, at)["ask:t"]
     assert (u["today"], u["7d"], u["30d"], u["failed_30d"], u["quota_30d"]) == (1, 2, 3, 1, 1)
 
@@ -156,8 +160,10 @@ def test_eval_grader_kinds():
 def test_codex_usage_limit_parks_tier_until_reset(env, monkeypatch):
     _tiers(env, {"g": {"base_url": "codex://o", "cli": "codex", "model": "gpt-x", "cost": "claude"}})
     monkeypatch.setattr(adapters, "_exe", lambda name: name)
-    msg = ("ERROR: You've hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit "
-           "https://chatgpt.com/settings/usage to purchase more credits or try again at Nov 12th, 2099 9:24 AM.")
+    msg = (
+        "ERROR: You've hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit "
+        "https://chatgpt.com/settings/usage to purchase more credits or try again at Nov 12th, 2099 9:24 AM."
+    )
     err = "x" * 400 + "\n" + msg + "\n" + "y" * 400  # reason sits mid-stderr, as codex prints it
     monkeypatch.setattr(llm.subprocess, "run", lambda argv, **kw: sp.CompletedProcess(argv, 1, "", err))
     with pytest.raises(FleetError, match="usage limit"):
@@ -170,8 +176,11 @@ def test_agy_empty_reply_gets_one_retry(env, monkeypatch):
     _tiers(env, {"g": {"base_url": "agy://google", "cli": "agy", "model": "gem", "cost": "flat"}})
     monkeypatch.setattr(adapters, "_exe", lambda name: name)
     replies = iter(["", "hi"])
-    monkeypatch.setattr(llm.subprocess, "run", lambda argv, **kw: sp.CompletedProcess(
-        argv, 0, json.dumps({"status": "SUCCESS", "response": next(replies)}), ""))
+    monkeypatch.setattr(
+        llm.subprocess,
+        "run",
+        lambda argv, **kw: sp.CompletedProcess(argv, 0, json.dumps({"status": "SUCCESS", "response": next(replies)}), ""),
+    )
     assert llm.ask(registry.load(), "g", "q").text == "hi"
 
 
@@ -211,8 +220,14 @@ def test_down_provider_is_skipped_for_rest_of_call(env, monkeypatch):
 
 
 def test_auto_skips_cli_tiers(env):
-    _tiers(env, {"a": {"base_url": "agy://g", "cli": "agy", "model": "g", "cost": "flat"}, "h": _http(1),
-                 "f": {**_http(2), "cost": "flat"}})
+    _tiers(
+        env,
+        {
+            "a": {"base_url": "agy://g", "cli": "agy", "model": "g", "cost": "flat"},
+            "h": _http(1),
+            "f": {**_http(2), "cost": "flat"},
+        },
+    )
     assert llm.candidates(registry.load(), "auto") == ["h", "f"]
 
 
