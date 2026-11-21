@@ -24,6 +24,12 @@
 | doctor / health | brainstem homeostasis | brainstem |
 | fleet CLI | `ultron` / `brain` CLI: status / excite / learn | — |
 
+## Added 2026-11-15
+
+| Piece | Neuron | Region / role |
+|---|---|---|
+| 36 Muse model tiers across 32 hosts (Abacus, OpenRouter, Meta, Ollama Cloud, OpenCode, Fireworks, Together, DeepInfra, Hugging Face, + 23 more) | neurons `muse-*` | association — see docs/PROVIDERS.md |
+
 ## Added 2026-11-14 (Ultron review)
 
 | Piece | Neuron | Region / role |
