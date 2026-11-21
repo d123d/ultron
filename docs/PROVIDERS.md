@@ -39,6 +39,53 @@ under the tier's `key_env` — never in this repo.
 Every direct tier has a `fallback:` chain into free/flat tiers, so a missing
 or exhausted key degrades instead of failing the stimulus.
 
+## Muse model tiers (`muse-*`, added 2026-11-15)
+
+The Muse model served by 32 providers — one tier + neuron each, all with a
+`fallback:` chain (into `muse-ollama`, `muse-go`, `muse`, `zen`). Table drawn
+from `src/ai_neural_network/workers.yaml`; `brain doctor --catalog` validates
+the model ids live. Not the Muse CLI worker (`muse-code` neuron) — these are
+API tiers for the Muse model itself.
+
+| Tier | Host | Model | key_env | Cost |
+|---|---|---|---|---|
+| muse-abacus | routellm.abacus.ai | muse-spark-1.1 | ABACUS_API_KEY | metered |
+| muse-abliterated | api.abliteratedllm.dev | muse-spark-open | ABLITERATEDLLM_API_KEY | metered |
+| muse-aiand | api.aiand.com | meta/muse-spark-open | AIAND_API_KEY | metered |
+| muse-aimlapi | api.aimlapi.com | meta/muse-glimmer-30b | AIMLAPI_API_KEY | metered |
+| muse-bothub | openai.bothub.ru | muse-spark-1.3-contributor | BOTHUB_API_KEY | metered |
+| muse-cline | api.cline.bot | cline-pass/muse-spark-1.3-contributor | CLINE_API_KEY | metered |
+| muse-commandcode | api.commandcode.ai | meta/muse-spark-1.3-contributor | CMD_API_KEY | metered |
+| muse-deepinfra | api.deepinfra.com | meta-models/Muse-Glimmer-30B | DEEPINFRA_API_KEY | metered |
+| muse-doubleword | api.doubleword.ai | meta-models/Muse-Glimmer-30B | DOUBLEWORD_API_KEY | metered |
+| muse-edenai | api.edenai.run | deepinfra/meta-models/Muse-Glimmer-30B | EDENAI_API_KEY | metered |
+| muse-empiriolabs | api.empiriolabs.ai | muse-glimmer-30b | EMPIRIOLABS_API_KEY | metered |
+| muse-fireworks | api.fireworks.ai | accounts/fireworks/models/muse-spark-open | FIREWORKS_API_KEY | metered |
+| muse-go | opencode.ai | muse-spark-1.3-contributor | OPENCODE_GO_API_KEY | flat |
+| muse-hf | router.huggingface.co | meta-models/Muse-Glimmer-30B | HF_TOKEN | metered |
+| muse-hyper | hyper.charm.land | muse-spark-open | HYPER_API_KEY | metered |
+| muse-kilo | api.kilo.ai | meta/muse-spark-1.3-contributor | KILO_API_KEY | metered |
+| muse-llmgateway | api.llmgateway.io | muse-spark-1.3-contributor | LLMGATEWAY_API_KEY | metered |
+| muse-llmtr | llmtr.com | meta/muse-spark-1.2-contributor | LLMTR_API_KEY | metered |
+| muse-meta | api.meta.ai | muse-spark-1.3-contributor | META_MODEL_API_KEY | metered |
+| muse-meta-ember | api.meta.ai | muse-ember-1.0 | META_MODEL_API_KEY | metered |
+| muse-meta-wonder | api.meta.ai | muse-wonder-1.0 | META_MODEL_API_KEY | metered |
+| muse-modal | inference.us-west.modal.direct | meta-models/Muse-Spark-Open-816B-A42B | MODAL_PROXY_TOKEN | metered |
+| muse-nanogpt | nano-gpt.com | meta/muse-spark-1.3-contributor | NANO_GPT_API_KEY | metered |
+| muse-nebius | api.tokenfactory.nebius.com | meta-models/muse-spark-open | NEBIUS_API_KEY | metered |
+| muse-ollama | ollama.com | muse-spark-open | OLLAMA_API_KEY | flat |
+| muse-openrouter | openrouter.ai | meta/muse-ember | OPENROUTER_API_KEY | metered |
+| muse-openrouter-contrib | openrouter.ai | meta/muse-spark-1.3-contributor | OPENROUTER_API_KEY | metered |
+| muse-opper | api.opper.ai | muse-spark-1.2 | OPPER_API_KEY | metered |
+| muse-orcarouter | api.orcarouter.ai | meta/muse-spark-1.1 | ORCAROUTER_API_KEY | metered |
+| muse-prime | api.pinference.ai | meta/muse-spark-open | PRIME_API_KEY | metered |
+| muse-requesty | router.requesty.ai | muse-glimmer-30b | REQUESTY_API_KEY | metered |
+| muse-together | api.together.xyz | meta-models/Muse-Spark-Open-816B-A42B | TOGETHER_API_KEY | metered |
+| muse-venice | api.venice.ai | muse-spark-open | VENICE_API_KEY | metered |
+| muse-vercel | ai-gateway.vercel.sh | meta/muse-spark-1.3-contributor | AI_GATEWAY_API_KEY | metered |
+| muse-vultr | api.vultrinference.com | muse-glimmer-30b | VULTR_API_KEY | metered |
+| muse-zen | opencode.ai | muse-ember-1.0 | OPENCODE_API_KEY | metered |
+
 ## Subscription / CLI routes (no API key)
 
 Anthropic via `claude` (claude, best, claude-leader) · OpenAI via `codex`
