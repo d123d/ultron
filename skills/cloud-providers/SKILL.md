@@ -51,6 +51,7 @@ until someone writes an adapter. Full matrix: `docs/PROVIDERS.md`.
 | nim-* / vision / muse / meta | NVIDIA NIM | NVIDIA_API_KEY |
 | utility / ollama-cloud | Ollama Cloud | OLLAMA_API_KEY |
 | go | OpenCode Go | OPENCODE_GO_API_KEY |
+| muse-* (36 tiers) | Muse model via 32 providers — full list in `docs/PROVIDERS.md` | per-tier (see matrix) |
 
 ## Subscription / CLI routes (no API key; needs the CLI logged in)
 
