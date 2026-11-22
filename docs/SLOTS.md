@@ -83,7 +83,7 @@ or reopens it. Heartbeat: `<state>/daemon.json`. One sleep consolidation a day.
 - `brain slots` lists local harnesses as slots too (driver, parallel slots, ready / cooldown / not installed).
 - Muse worker is disabled until `muse login` is approved (CLI 1.4.20 installed, not logged in).
 - Not hand-reviewed yet: `evals.py` task data, `gitinfo.py`, `worktree.py`, `throttle.py` lock internals.
-- Known limits: `health.json` updates are thread-safe but not cross-process safe (daemon + CLI can lose an update); `ledger.read()` reads the whole file on every capped call.
+- Known limits: `health.json` updates are safe across threads and processes (file lock, since 2026-11-16); `ledger.read()` reads the whole file on every capped call.
 
 ## Vision QC gate (2026-11-15)
 
