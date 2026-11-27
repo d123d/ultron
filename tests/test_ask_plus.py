@@ -146,6 +146,17 @@ def test_doctor_live_probes_tier_alone(env, monkeypatch):
     assert rows["dead"]["ok"] is False and rows["t"]["ok"] is True
 
 
+def test_doctor_not_ok_when_cooled_or_keyless(env, monkeypatch):
+    from ai_neural_network import doctor
+
+    _tiers(env, {"cool": _http(1), "keyless": {**_http(2), "key_env": "ULTRON_TEST_NO_SUCH_KEY"}, "up": _http(3)})
+    monkeypatch.setattr(doctor, "_tcp", lambda url: True)
+    health.set_cooldown("cool", 600, "test")
+    rows = {r["id"]: r for r in doctor.doctor(registry.load()) if r["kind"] == "tier"}
+    assert rows["cool"]["ok"] is False and rows["up"]["ok"] is True
+    assert rows["keyless"]["ok"] is False and rows["keyless"]["note"] == "no key ULTRON_TEST_NO_SUCH_KEY"
+
+
 def test_eval_grader_kinds():
     from ai_neural_network.evals import TASKS, grade
 

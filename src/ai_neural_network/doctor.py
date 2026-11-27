@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 from . import health
 from .adapters import acpx_entry
-from .llm import _tier_key, ask, calls_today
+from .llm import _secret_or_none, _tier_key, ask, calls_today
 from .procs import FleetError
 from .registry import Registry
 
@@ -100,7 +100,8 @@ def _openrouter_free_left(reg: Registry) -> int | None:
 def doctor(reg: Registry, live: bool = False, catalog: bool = False) -> list[dict]:
     rows = []
     for w in reg.workers.values():
-        ok, version = _probe(w.probe) if w.probe else (True, "-")
+        # a disabled worker is never picked: skip its probe (openhuman's ran a card query, 2026-11-27)
+        ok, version = (_probe(w.probe) if w.probe else (True, "-")) if w.enabled else (False, "disabled")
         note = ""
         if w.control == "acpx":
             try:
@@ -116,7 +117,7 @@ def doctor(reg: Registry, live: bool = False, catalog: bool = False) -> list[dic
                 "control": w.control,
                 "enabled": w.enabled,
                 "opt_in": w.opt_in,
-                "ok": ok and w.enabled,
+                "ok": ok and w.enabled and not until,
                 "version": version,
                 "cooldown_until": health.iso(until) if until else None,
                 "note": note or w.notes[:60],
@@ -149,6 +150,11 @@ def doctor(reg: Registry, live: bool = False, catalog: bool = False) -> list[dic
         else:
             up = _tcp(t.base_url)
             row.update(ok=up, version=t.model, note="port open" if up else "port closed")
+        # port open is not health: a cooled tier or one with no key cannot answer (both showed ok, 2026-11-27)
+        if t.key_env and not _secret_or_none(t.key_env):
+            row.update(ok=False, note=f"no key {t.key_env}")
+        elif until:
+            row["ok"] = False
         if t.daily_cap:
             row["note"] = f"{calls_today(t.id)}/{t.daily_cap} calls today; {row.get('note', '')}".rstrip("; ")
         rows.append(row)
@@ -166,7 +172,7 @@ def doctor(reg: Registry, live: bool = False, catalog: bool = False) -> list[dic
 
 def provider_rows(reg: Registry) -> list[dict]:
     """Which tiers can actually fire today: key present (names only, never values), adapter, cooldown."""
-    from .llm import _secret_or_none
+    from .llm import _secret_or_none  # looked up at call time: tests patch llm._secret_or_none
 
     rows = []
     for t in reg.tiers.values():

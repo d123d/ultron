@@ -494,7 +494,9 @@ def _dispatch(args) -> int:
 
     if args.cmd == "doctor":
         rows = doctor(reg, live=args.live, catalog=args.catalog)
-        _out(rows, args.json, _table(rows, ["id", "kind", "cost", "ok", "version", "cooldown_until", "note"]))
+        cool = [r["id"] for r in rows if r["cooldown_until"]]
+        summary = f"\n{sum(r['ok'] for r in rows)}/{len(rows)} ok; cooling: {', '.join(cool) or '-'}"
+        _out(rows, args.json, _table(rows, ["id", "kind", "cost", "ok", "version", "cooldown_until", "note"]) + summary)
         return 0
 
     if args.cmd == "route":
